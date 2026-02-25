@@ -23,30 +23,43 @@
   #overlay-msg{font-size:14px;color:var(--ink2);}
 
   /* ── Modal ── */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(26,23,20,0.45);display:none;align-items:center;justify-content:center;z-index:1500;padding:20px;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(26,23,20,0.45);display:none;align-items:center;justify-content:center;z-index:1500;padding:16px;}
   .modal-backdrop.open{display:flex;}
-  .modal{background:var(--surface);border-radius:20px;padding:32px 28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,0.18);border:1px solid var(--border);}
-  .modal h3{font-size:1.3rem;margin-bottom:6px;}
-  .modal-subtitle{font-size:13px;color:var(--ink2);margin-bottom:24px;}
-  .modal-row{margin-bottom:16px;}
-  .modal-row label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:6px;}
-  .modal-row input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
-  .modal-row input:focus{border-color:var(--accent);}
-  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal{background:var(--surface);border-radius:20px;padding:28px 24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.18);border:1px solid var(--border);}
+  .modal h3{font-size:1.2rem;margin-bottom:4px;}
+  .modal-subtitle{font-size:13px;color:var(--ink2);margin-bottom:20px;}
+  /* Accordion */
+  .accordion-item{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+  .accordion-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;background:var(--surface);transition:background .15s;user-select:none;}
+  .accordion-header:hover{background:var(--bg);}
+  .accordion-header-left{display:flex;align-items:center;gap:10px;}
+  .accordion-icon{font-size:16px;}
+  .accordion-title{font-size:14px;font-weight:600;color:var(--ink);}
+  .accordion-arrow{font-size:11px;color:var(--ink2);transition:transform .2s;}
+  .accordion-arrow.open{transform:rotate(180deg);}
+  .accordion-body{display:none;padding:16px;border-top:1px solid var(--border);background:var(--bg);}
+  .accordion-body.open{display:block;}
+  /* fields inside accordion */
+  .acc-row{margin-bottom:12px;}
+  .acc-row label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:5px;}
+  .acc-row input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
+  .acc-row input:focus{border-color:var(--accent);}
+  .modal-error{color:var(--red);font-size:12px;margin-top:6px;display:none;}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
   .btn-modal-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
   .btn-modal-primary:hover{background:#b03d24;}
   .btn-modal-primary:disabled{opacity:.6;cursor:not-allowed;}
   .btn-modal-cancel{flex:1;background:var(--surface2);color:var(--ink2);border:none;border-radius:10px;padding:11px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
   .btn-modal-cancel:hover{background:var(--border);}
-  .modal-error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
-  .modal-divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
   /* person list inside modal */
-  .modal-person-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:200px;overflow-y:auto;}
-  .modal-person-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:14px;}
-  .modal-person-item .p-name{flex:1;}
-  .modal-person-item .p-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface2);color:var(--ink2);}
+  .modal-person-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .modal-person-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);font-size:14px;}
+  .modal-person-item .p-name{flex:1;font-weight:500;}
+  .btn-person-del{background:#fce8e4;color:var(--accent);border:none;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap;flex-shrink:0;}
+  .btn-person-del:hover{background:#f8d0c8;}
   .modal-person-add-row{display:flex;gap:8px;}
-  .modal-person-add-row input{flex:1;}
+  .modal-person-add-row input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
+  .modal-person-add-row input:focus{border-color:var(--accent);}
   .btn-sm{padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s;}
   .btn-sm:hover{background:#b03d24;}
 
@@ -191,57 +204,73 @@
 <div class="modal-backdrop" id="modal-manage">
   <div class="modal">
     <h3>⚙️ 群組管理</h3>
-    <p class="modal-subtitle">修改名稱、新增成員，或切換到其他群組</p>
+    <p class="modal-subtitle" id="manage-current-group"></p>
 
-    <!-- 修改群組名稱 -->
-    <div class="modal-row">
-      <label>群組名稱</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="manage-group-name" maxlength="30" placeholder="輸入新名稱" style="flex:1;">
-        <button class="btn-sm" id="btn-save-name">儲存</button>
+    <!-- ① 成員管理 -->
+    <div class="accordion-item">
+      <div class="accordion-header" data-target="acc-members">
+        <div class="accordion-header-left">
+          <span class="accordion-icon">👥</span>
+          <span class="accordion-title">成員管理</span>
+        </div>
+        <span class="accordion-arrow" id="arr-members">▼</span>
+      </div>
+      <div class="accordion-body" id="acc-members">
+        <div class="modal-person-list" id="manage-person-list"></div>
+        <div class="acc-row" style="margin-bottom:4px;">
+          <label>新增成員</label>
+        </div>
+        <div class="modal-person-add-row">
+          <input type="text" id="manage-new-person" maxlength="20" placeholder="輸入新成員名稱">
+          <button class="btn-sm" id="btn-add-member">新增</button>
+        </div>
+        <div class="modal-error" id="manage-member-error"></div>
       </div>
     </div>
-    <div class="modal-error" id="manage-name-error"></div>
 
-    <hr class="modal-divider">
-
-    <!-- 成員列表 + 新增 -->
-    <div class="modal-row">
-      <label>成員管理</label>
-      <div class="modal-person-list" id="manage-person-list"></div>
-      <div class="modal-person-add-row">
-        <input type="text" id="manage-new-person" maxlength="20" placeholder="輸入新成員名稱">
-        <button class="btn-sm" id="btn-add-member">新增</button>
+    <!-- ② 切換群組 -->
+    <div class="accordion-item">
+      <div class="accordion-header" data-target="acc-switch">
+        <div class="accordion-header-left">
+          <span class="accordion-icon">🔄</span>
+          <span class="accordion-title">切換到既有群組</span>
+        </div>
+        <span class="accordion-arrow" id="arr-switch">▼</span>
+      </div>
+      <div class="accordion-body" id="acc-switch">
+        <div class="acc-row">
+          <label>群組 ID 或分享連結</label>
+          <input type="text" id="manage-switch-id" placeholder="貼上群組 ID 或完整連結">
+        </div>
+        <div class="modal-error" id="manage-switch-error"></div>
+        <button class="btn-sm" id="btn-switch-group" style="width:100%;padding:10px;margin-top:4px;">切換</button>
       </div>
     </div>
-    <div class="modal-error" id="manage-member-error"></div>
 
-    <hr class="modal-divider">
-
-    <!-- 切換到既有群組 -->
-    <div class="modal-row">
-      <label>切換到既有群組</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="manage-switch-id" placeholder="貼上群組 ID 或完整連結" style="flex:1;">
-        <button class="btn-sm" id="btn-switch-group">切換</button>
+    <!-- ③ 建立新群組 -->
+    <div class="accordion-item">
+      <div class="accordion-header" data-target="acc-newgroup">
+        <div class="accordion-header-left">
+          <span class="accordion-icon">✨</span>
+          <span class="accordion-title">建立新群組</span>
+        </div>
+        <span class="accordion-arrow" id="arr-newgroup">▼</span>
+      </div>
+      <div class="accordion-body" id="acc-newgroup">
+        <p style="font-size:12px;color:var(--ink2);margin-bottom:12px;">建立後自動切換，目前群組資料不受影響。</p>
+        <div class="acc-row">
+          <label>群組名稱</label>
+          <input type="text" id="new-group-name" maxlength="30" placeholder="輸入新群組名稱">
+        </div>
+        <div class="acc-row">
+          <label>成員名單</label>
+          <div id="new-group-persons" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+          <button class="btn-add-person" id="btn-new-group-add-person">＋ 新增成員</button>
+        </div>
+        <div class="modal-error" id="manage-newgroup-error"></div>
+        <button class="btn-sm" id="btn-create-new-group" style="width:100%;padding:10px;margin-top:4px;">建立並切換</button>
       </div>
     </div>
-    <div class="modal-error" id="manage-switch-error"></div>
-
-    <hr class="modal-divider">
-
-    <!-- 建立全新群組 -->
-    <div class="modal-row">
-      <label>建立全新群組</label>
-      <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">建立後會切換到新群組，目前群組資料不會消失，可隨時透過連結回去。</p>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="text" id="new-group-name" maxlength="30" placeholder="新群組名稱" style="flex:1;">
-      </div>
-      <div id="new-group-persons" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
-      <button class="btn-add-person" id="btn-new-group-add-person" style="margin-bottom:8px;">＋ 新增成員</button>
-      <button class="btn-sm" id="btn-create-new-group" style="width:100%;padding:10px;">建立新群組並切換</button>
-    </div>
-    <div class="modal-error" id="manage-newgroup-error"></div>
 
     <div class="modal-actions">
       <button class="btn-modal-cancel" id="btn-manage-close">關閉</button>
@@ -539,15 +568,32 @@ $('copy-btn').addEventListener('click',()=>{
 $('btn-open-manage').addEventListener('click', openManageModal);
 $('btn-manage-close').addEventListener('click', ()=>closeModal('modal-manage'));
 
+// ── Accordion toggle ─────────────────────────────────────
+document.querySelectorAll('.accordion-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const targetId = header.dataset.target;
+    const body     = $(targetId);
+    const arrow    = header.querySelector('.accordion-arrow');
+    const isOpen   = body.classList.contains('open');
+    // Close all first
+    document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('.accordion-arrow').forEach(a => a.classList.remove('open'));
+    // Open clicked if it was closed
+    if(!isOpen){ body.classList.add('open'); arrow.classList.add('open'); }
+  });
+});
+
 function openManageModal(){
-  // Pre-fill name
-  $('manage-group-name').value = $('top-group-name').textContent;
-  hideErr($('manage-name-error'));
+  $('manage-current-group').textContent = '目前群組：' + $('top-group-name').textContent;
   hideErr($('manage-member-error'));
   hideErr($('manage-switch-error'));
   hideErr($('manage-newgroup-error'));
-  $('manage-switch-id').value='';
-  // Init new-group person rows with 2 blank rows
+  $('manage-switch-id').value = '';
+  $('manage-new-person').value = '';
+  // Close all accordion panels
+  document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.accordion-arrow').forEach(a => a.classList.remove('open'));
+  // Init new-group person rows
   const container = $('new-group-persons');
   container.innerHTML = '';
   addNewGroupPersonRow(); addNewGroupPersonRow();
@@ -556,48 +602,43 @@ function openManageModal(){
   openModal('modal-manage');
 }
 
-function addNewGroupPersonRow(){
-  const container = $('new-group-persons');
-  const row = document.createElement('div');
-  row.className = 'person-row';
-  const input = document.createElement('input');
-  input.type='text'; input.placeholder='成員名稱'; input.maxLength=20;
-  const btn = document.createElement('button');
-  btn.type='button'; btn.className='btn-icon btn-remove'; btn.textContent='✕';
-  btn.addEventListener('click', () => { if(container.children.length > 1) row.remove(); });
-  row.appendChild(input); row.appendChild(btn); container.appendChild(row); input.focus();
-}
-
 function renderManagePersonList(){
-  const list=$('manage-person-list');
-  list.innerHTML='';
-  persons.forEach(p=>{
-    const item=document.createElement('div');
-    item.className='modal-person-item';
-    item.innerHTML=`<span class="p-name">${esc(p.name)}</span><span class="p-badge">ID: ${esc(p.id)}</span>`;
+  const list = $('manage-person-list');
+  list.innerHTML = '';
+  if(persons.length === 0){
+    list.innerHTML = '<div style="color:var(--ink2);font-size:13px;padding:4px 0;">尚無成員</div>';
+    return;
+  }
+  persons.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'modal-person-item';
+    const nameSpan = document.createElement('span');
+    nameSpan.className   = 'p-name';
+    nameSpan.textContent = p.name;
+    const delBtn = document.createElement('button');
+    delBtn.className   = 'btn-person-del';
+    delBtn.textContent = '刪除';
+    delBtn.addEventListener('click', () => deleteMember(p.id, p.name));
+    item.appendChild(nameSpan);
+    item.appendChild(delBtn);
     list.appendChild(item);
   });
-  if(persons.length===0){
-    list.innerHTML='<div style="color:var(--ink2);font-size:13px;padding:4px 0;">尚無成員</div>';
-  }
 }
 
-// ── Save group name ──────────────────────────────────────
-$('btn-save-name').addEventListener('click', async ()=>{
-  const newName=$('manage-group-name').value.trim();
-  const errEl=$('manage-name-error'); hideErr(errEl);
-  if(!newName){ showErr(errEl,'請輸入群組名稱'); return; }
-  const btn=$('btn-save-name'); btn.disabled=true; btn.textContent='儲存中…';
+async function deleteMember(pid, pname){
+  if(persons.length <= 1){ alert('至少需要保留一位成員'); return; }
+  if(!confirm(`確定要刪除成員「${pname}」嗎？\n注意：已記錄的支出中此人的資料不受影響。`)) return;
+  const errEl = $('manage-member-error'); hideErr(errEl);
   try {
-    await updateDoc(doc(db,'groups',groupId),{ name:newName });
-    $('top-group-name').textContent=newName;
-    // Update share URL (same groupId, just display name changes)
-    btn.textContent='✓ 已儲存';
-    setTimeout(()=>{ btn.textContent='儲存'; btn.disabled=false; },1500);
+    const updatedPersons = persons.filter(p => p.id !== pid);
+    await updateDoc(doc(db,'groups',groupId), { persons: updatedPersons });
+    persons = updatedPersons;
+    renderManagePersonList();
+    rebuildFormPersons();
   } catch(e){
-    showErr(errEl,'儲存失敗：'+e.message); btn.disabled=false; btn.textContent='儲存';
+    showErr(errEl, '刪除失敗：' + e.message);
   }
-});
+}
 
 // ── Add new member ───────────────────────────────────────
 $('btn-add-member').addEventListener('click', async ()=>{
@@ -659,7 +700,55 @@ $('btn-switch-group').addEventListener('click', async ()=>{
   finally { btn.disabled=false; btn.textContent='切換'; }
 });
 
-// ── Rebuild only person-related selectors (after add member) ──
+// ── Add person row inside new-group form ─────────────────
+function addNewGroupPersonRow(){
+  const container = $('new-group-persons');
+  const row = document.createElement('div');
+  row.className = 'person-row';
+  const input = document.createElement('input');
+  input.type='text'; input.placeholder='成員名稱'; input.maxLength=20;
+  const btn = document.createElement('button');
+  btn.type='button'; btn.className='btn-icon btn-remove'; btn.textContent='✕';
+  btn.addEventListener('click', () => { if(container.children.length > 1) row.remove(); });
+  row.appendChild(input); row.appendChild(btn); container.appendChild(row);
+}
+$('btn-new-group-add-person').addEventListener('click', addNewGroupPersonRow);
+
+// ── Create brand new group ────────────────────────────────
+$('btn-create-new-group').addEventListener('click', async () => {
+  const newGroupName = $('new-group-name').value.trim();
+  const inputs = document.querySelectorAll('#new-group-persons .person-row input');
+  const names  = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  const errEl  = $('manage-newgroup-error'); hideErr(errEl);
+
+  if(!newGroupName)                        { showErr(errEl,'請輸入新群組名稱'); return; }
+  if(names.length < 1)                     { showErr(errEl,'請至少新增一位成員'); return; }
+  if(new Set(names).size !== names.length) { showErr(errEl,'成員名稱不可重複'); return; }
+
+  const btn = $('btn-create-new-group'); btn.disabled=true; btn.textContent='建立中…';
+  try {
+    const newPersons = names.map((n,i) => ({ id:'p'+(i+1), name:n }));
+    const ref = await addDoc(collection(db,'groups'), {
+      name: newGroupName, persons: newPersons, createdAt: serverTimestamp()
+    });
+    const newGroupId = ref.id;
+    if(unsubExpenses){ unsubExpenses(); unsubExpenses=null; }
+    groupId=newGroupId; persons=newPersons; expenses=[];
+    $('top-group-name').textContent = newGroupName;
+    const shareUrl = location.origin + location.pathname + '?g=' + newGroupId;
+    $('share-url').value = shareUrl;
+    history.replaceState(null,'','?g='+newGroupId);
+    closeModal('modal-manage');
+    buildFormControls();
+    subscribeExpenses();
+  } catch(e) {
+    showErr(errEl,'建立失敗：'+e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='建立並切換';
+  }
+});
+
+// ── Rebuild only person-related selectors (after add/del member) ──
 function rebuildFormPersons(){
   $('exp-payer').innerHTML=persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
   buildSplitterChips();
