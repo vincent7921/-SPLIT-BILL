@@ -194,6 +194,20 @@
   .impact-split{color:var(--red);}
   .impact-net{font-size:11px;color:var(--ink2);margin-top:2px;}
 
+  /* ── Cleared expense ── */
+  .expense-item.is-cleared .expense-title{text-decoration:line-through;color:var(--ink2);}
+  .expense-item.is-cleared .expense-amount{color:var(--ink2);}
+  .expense-item.is-cleared .expense-summary{opacity:.6;}
+  .cleared-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:#d8f3dc;color:var(--green);font-weight:600;white-space:nowrap;flex-shrink:0;}
+  .btn-clear{border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0;white-space:nowrap;}
+  .btn-clear.uncleared{background:var(--surface2);color:var(--ink2);}
+  .btn-clear.uncleared:hover{background:var(--border);color:var(--green);}
+  .btn-clear.cleared{background:#d8f3dc;color:var(--green);}
+  .btn-clear.cleared:hover{background:#b7e4c7;}
+  .ledger-cleared-note{font-size:11px;color:var(--green);margin-top:2px;}
+  .ledger-row.is-cleared{opacity:.45;}
+  .ledger-row.is-cleared .ledger-row-title{text-decoration:line-through;}
+
   /* ── Settlement ── */
   .settlement-body{padding:16px 20px;}
   .settlement-empty{color:var(--ink2);font-size:13px;text-align:center;padding:16px 0;}
@@ -446,12 +460,12 @@ import { getFirestore, collection, doc,
 // │  ★  請將下方換成您的 Firebase 專案設定              │
 // └──────────────────────────────────────────────────────┘
 const firebaseConfig = {
-  apiKey:            "AIzaSyA0KO5nb4gqVT_ltca2B_-EVGD4s5qqyCI",
-  authDomain:        "split-bill-9b60b.firebaseapp.com",
-  projectId:         "split-bill-9b60b",
-  storageBucket:     "split-bill-9b60b.firebasestorage.app",
-  messagingSenderId: "223183892907",
-  appId:             "1:223183892907:web:a271d3548d89630ec062ee"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -868,43 +882,82 @@ async function addExpense(){
 // ════════════════════════════════════════════════════════
 function renderExpenseList(){
   const container=$('expense-list'),countEl=$('expense-count');
-  countEl.textContent=expenses.length?`共 ${expenses.length} 筆`:'';
+  const activeCount=expenses.filter(e=>!e.cleared).length;
+  countEl.textContent=expenses.length?`共 ${expenses.length} 筆，未結清 ${activeCount} 筆`:'';
   if(expenses.length===0){container.innerHTML=`<div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>`;return;}
   container.innerHTML='';
   expenses.slice().reverse().forEach(exp=>{
     const payer=persons.find(p=>p.id===exp.paidBy),payerName=payer?payer.name:'?';
     const mLabel=METHOD_LABELS[exp.splitMethod]||exp.splitMethod,splits=exp.splits||[];
-    const item=document.createElement('div'); item.className='expense-item';
+    const isCleared=!!exp.cleared;
+
+    const item=document.createElement('div');
+    item.className='expense-item'+(isCleared?' is-cleared':'');
+
     const summary=document.createElement('div'); summary.className='expense-summary';
-    summary.innerHTML=`
-      <div style="min-width:0;">
-        <div class="expense-title">${esc(exp.title)}</div>
-        <div class="expense-meta">${esc(payerName)} 付款 · ${splits.length} 人 <span class="method-badge">${mLabel}</span></div>
-      </div>
-      <div class="expense-right">
-        <span class="expense-amount">$${fmt(exp.total)}</span>
-        <button class="btn-delete" data-id="${exp.id}">刪除</button>
-        <span class="expand-icon">▼</span>
-      </div>`;
-    const detail=document.createElement('div'); detail.className='expense-detail';
-    detail.innerHTML=`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">分攤明細（${mLabel}）</div>`+
-      splits.map(s=>{
-        const person=persons.find(p=>p.id===s.personId);
-        const extra=exp.splitMethod==='percent'?` <span style="color:var(--ink2);font-size:11px;">(${(s.amount/exp.total*100).toFixed(1)}%)</span>`:'';
-        return `<div class="split-row"><span>${esc(person?person.name:'?')}</span><span><strong>$${fmt(s.amount)}</strong>${extra}</span></div>`;
-      }).join('');
-    summary.addEventListener('click',e=>{
-      if(e.target.classList.contains('btn-delete'))return;
-      detail.classList.toggle('open');
-      summary.querySelector('.expand-icon').classList.toggle('open',detail.classList.contains('open'));
+
+    // Left side
+    const left=document.createElement('div'); left.style.minWidth='0';
+    const titleRow=document.createElement('div'); titleRow.className='expense-title'; titleRow.textContent=exp.title;
+    const metaRow=document.createElement('div'); metaRow.className='expense-meta';
+    metaRow.innerHTML=`${esc(payerName)} 付款 · ${splits.length} 人 <span class="method-badge">${mLabel}</span>`;
+    left.appendChild(titleRow); left.appendChild(metaRow);
+
+    // Right side
+    const right=document.createElement('div'); right.className='expense-right';
+
+    if(isCleared){
+      const badge=document.createElement('span'); badge.className='cleared-badge'; badge.textContent='✓ 已結清';
+      right.appendChild(badge);
+    }
+    const amtSpan=document.createElement('span'); amtSpan.className='expense-amount'; amtSpan.textContent=`$${fmt(exp.total)}`;
+    right.appendChild(amtSpan);
+
+    // Clear toggle button
+    const clearBtn=document.createElement('button');
+    clearBtn.className='btn-clear '+(isCleared?'cleared':'uncleared');
+    clearBtn.textContent=isCleared?'取消結清':'標記結清';
+    clearBtn.addEventListener('click',async e=>{
+      e.stopPropagation();
+      setSyncStatus('saving');
+      try{
+        await updateDoc(doc(db,'groups',groupId,'expenses',exp.id),{cleared:!isCleared});
+      }catch(err){alert('更新失敗：'+err.message);setSyncStatus('error');}
     });
-    summary.querySelector('.btn-delete').addEventListener('click',async e=>{
+    right.appendChild(clearBtn);
+
+    // Delete button
+    const delBtn=document.createElement('button'); delBtn.className='btn-delete'; delBtn.textContent='刪除';
+    delBtn.addEventListener('click',async e=>{
       e.stopPropagation();
       if(!confirm('確定要刪除這筆支出嗎？'))return;
       setSyncStatus('saving');
       try{await deleteDoc(doc(db,'groups',groupId,'expenses',exp.id));}
       catch(err){alert('刪除失敗：'+err.message);setSyncStatus('error');}
     });
+    right.appendChild(delBtn);
+
+    // Expand icon
+    const expandIcon=document.createElement('span'); expandIcon.className='expand-icon'; expandIcon.textContent='▼';
+    right.appendChild(expandIcon);
+
+    summary.appendChild(left); summary.appendChild(right);
+
+    // Detail block
+    const detail=document.createElement('div'); detail.className='expense-detail';
+    detail.innerHTML=`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">分攤明細（${mLabel}）${isCleared?'<span style="color:var(--green);margin-left:6px;font-weight:600;">・已結清，不計入帳</span>':''}</div>`+
+      splits.map(s=>{
+        const person=persons.find(p=>p.id===s.personId);
+        const extra=exp.splitMethod==='percent'?` <span style="color:var(--ink2);font-size:11px;">(${(s.amount/exp.total*100).toFixed(1)}%)</span>`:'';
+        return `<div class="split-row"><span>${esc(person?person.name:'?')}</span><span><strong>$${fmt(s.amount)}</strong>${extra}</span></div>`;
+      }).join('');
+
+    summary.addEventListener('click',e=>{
+      if(e.target.classList.contains('btn-delete')||e.target.classList.contains('btn-clear'))return;
+      detail.classList.toggle('open');
+      expandIcon.classList.toggle('open',detail.classList.contains('open'));
+    });
+
     item.appendChild(summary); item.appendChild(detail); container.appendChild(item);
   });
 }
@@ -915,19 +968,45 @@ function renderExpenseList(){
 function renderLedger(){
   const pid=$('ledger-person').value,person=persons.find(p=>p.id===pid);
   if(!person)return;
-  let totalPaid=0,totalSplit=0; const rows=[];
+  let totalPaid=0,totalSplit=0;
+  const activeRows=[], clearedRows=[];
+
   expenses.forEach(exp=>{
     const paidByMe=exp.paidBy===pid,myShare=(exp.splits||[]).find(s=>s.personId===pid);
     if(!paidByMe&&!myShare)return;
     const paid=paidByMe?exp.total:0,split=myShare?myShare.amount:0;
-    totalPaid+=paid; totalSplit+=split;
     const payer=persons.find(p=>p.id===exp.paidBy);
-    rows.push({exp,paid,split,net:paid-split,payerName:payer?payer.name:'?'});
+    const row={exp,paid,split,net:paid-split,payerName:payer?payer.name:'?'};
+    if(exp.cleared){
+      clearedRows.push(row);
+    }else{
+      totalPaid+=paid; totalSplit+=split;
+      activeRows.push(row);
+    }
   });
+
   const balance=Math.round((totalPaid-totalSplit)*100)/100;
   const sc=balance>0?'positive':balance<0?'negative':'zero';
   const label=balance>0?'應收款':balance<0?'應付款':'已平衡';
   const bc=balance>0?'badge-receive':balance<0?'badge-pay':'badge-ok';
+
+  const renderRow=(r,isCleared)=>{
+    const sign=r.net>=0?'+':'';
+    const pctNote=(r.exp.splitMethod==='percent'&&r.split>0)?` (${(r.split/r.exp.total*100).toFixed(1)}%)`:'';
+    return `<div class="ledger-row${isCleared?' is-cleared':''}">
+      <div class="ledger-row-left">
+        <div class="ledger-row-title">${esc(r.exp.title)}</div>
+        <div class="ledger-row-meta">付款人：${esc(r.payerName)} · ${METHOD_LABELS[r.exp.splitMethod]||''}</div>
+        ${isCleared?'<div class="ledger-cleared-note">✓ 已結清，不計入</div>':''}
+      </div>
+      <div class="ledger-row-right">
+        ${r.paid>0?`<div class="impact-paid">+$${fmt(r.paid)}（已付）</div>`:''}
+        ${r.split>0?`<div class="impact-split">−$${fmt(r.split)}（分攤）${esc(pctNote)}</div>`:''}
+        <div class="impact-net">小計 ${sign}$${fmt(r.net)}</div>
+      </div>
+    </div>`;
+  };
+
   let html=`
     <div class="ledger-stats">
       <div class="stat-box"><div class="stat-label">已付總額</div><div class="stat-value">$${fmt(totalPaid)}</div></div>
@@ -935,25 +1014,20 @@ function renderLedger(){
       <div class="stat-box"><div class="stat-label">差額</div><div class="stat-value ${sc}">${balance>=0?'+':''}$${fmt(balance)}</div></div>
     </div>
     <span class="ledger-badge ${bc}">${label}：$${fmt(Math.abs(balance))}</span>
-    <div class="ledger-breakdown"><h4>逐筆明細（差額 = 已付 − 應分攤）</h4>`;
-  if(rows.length===0){html+=`<div style="color:var(--ink2);font-size:13px;padding:8px 0;">此角色尚無任何支出紀錄</div>`;}
-  else{
-    rows.forEach(r=>{
-      const sign=r.net>=0?'+':'';
-      const pctNote=(r.exp.splitMethod==='percent'&&r.split>0)?` (${(r.split/r.exp.total*100).toFixed(1)}%)`:'';
-      html+=`<div class="ledger-row">
-        <div class="ledger-row-left">
-          <div class="ledger-row-title">${esc(r.exp.title)}</div>
-          <div class="ledger-row-meta">付款人：${esc(r.payerName)} · ${METHOD_LABELS[r.exp.splitMethod]||''}</div>
-        </div>
-        <div class="ledger-row-right">
-          ${r.paid>0?`<div class="impact-paid">+$${fmt(r.paid)}（已付）</div>`:''}
-          ${r.split>0?`<div class="impact-split">−$${fmt(r.split)}（分攤）${esc(pctNote)}</div>`:''}
-          <div class="impact-net">小計 ${sign}$${fmt(r.net)}</div>
-        </div>
-      </div>`;
-    });
+    <div class="ledger-breakdown">
+      <h4>未結清明細</h4>`;
+
+  if(activeRows.length===0){
+    html+=`<div style="color:var(--ink2);font-size:13px;padding:8px 0;">此角色尚無未結清的支出紀錄</div>`;
+  }else{
+    activeRows.forEach(r=>{ html+=renderRow(r,false); });
   }
+
+  if(clearedRows.length>0){
+    html+=`<h4 style="margin-top:16px;">已結清（不計入）</h4>`;
+    clearedRows.forEach(r=>{ html+=renderRow(r,true); });
+  }
+
   html+=`</div>`;
   $('ledger-content').innerHTML=html;
 }
@@ -962,10 +1036,12 @@ function renderLedger(){
 // SETTLEMENT — 最優化債務清算
 // ════════════════════════════════════════════════════════
 function calcSettlement(){
-  // Step 1: net balance per person
+  // 只計算未結清的項目
+  const activeExpenses=expenses.filter(e=>!e.cleared);
+
   const balances={};
   persons.forEach(p=>balances[p.id]=0);
-  expenses.forEach(exp=>{
+  activeExpenses.forEach(exp=>{
     if(balances[exp.paidBy]!==undefined) balances[exp.paidBy]+=exp.total;
     (exp.splits||[]).forEach(s=>{
       if(balances[s.personId]!==undefined) balances[s.personId]-=s.amount;
