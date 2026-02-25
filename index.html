@@ -6,61 +6,97 @@
 <title>分帳系統</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#f5f0e8; --surface:#fffdf8; --surface2:#f0ebe0;
-    --ink:#1a1714; --ink2:#6b6560; --accent:#c84b2f;
-    --green:#2d6a4f; --red:#c84b2f; --border:#ddd8cc;
-    --shadow:0 2px 12px rgba(0,0,0,0.08); --radius:14px;
+  :root{
+    --bg:#f5f0e8;--surface:#fffdf8;--surface2:#f0ebe0;
+    --ink:#1a1714;--ink2:#6b6560;--accent:#c84b2f;
+    --green:#2d6a4f;--red:#c84b2f;--border:#ddd8cc;
+    --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:14px;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.6;}
-  h1,h2,h3{font-family:'DM Serif Display',serif;font-weight:400;}
+  h1,h2,h3,h4{font-family:'DM Serif Display',serif;font-weight:400;}
 
-  /* Loading overlay */
-  #loading-overlay{position:fixed;inset:0;background:rgba(245,240,232,0.92);display:none;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:12px;}
-  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  /* ── Loading overlay ── */
+  #loading-overlay{position:fixed;inset:0;background:rgba(245,240,232,0.92);display:none;align-items:center;justify-content:center;z-index:2000;flex-direction:column;gap:12px;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   #overlay-msg{font-size:14px;color:var(--ink2);}
 
-  /* Setup */
+  /* ── Modal ── */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(26,23,20,0.45);display:none;align-items:center;justify-content:center;z-index:1500;padding:20px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--surface);border-radius:20px;padding:32px 28px;max-width:440px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,0.18);border:1px solid var(--border);}
+  .modal h3{font-size:1.3rem;margin-bottom:6px;}
+  .modal-subtitle{font-size:13px;color:var(--ink2);margin-bottom:24px;}
+  .modal-row{margin-bottom:16px;}
+  .modal-row label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:6px;}
+  .modal-row input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
+  .modal-row input:focus{border-color:var(--accent);}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn-modal-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+  .btn-modal-primary:hover{background:#b03d24;}
+  .btn-modal-primary:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-modal-cancel{flex:1;background:var(--surface2);color:var(--ink2);border:none;border-radius:10px;padding:11px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+  .btn-modal-cancel:hover{background:var(--border);}
+  .modal-error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+  .modal-divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+  /* person list inside modal */
+  .modal-person-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:200px;overflow-y:auto;}
+  .modal-person-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:14px;}
+  .modal-person-item .p-name{flex:1;}
+  .modal-person-item .p-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface2);color:var(--ink2);}
+  .modal-person-add-row{display:flex;gap:8px;}
+  .modal-person-add-row input{flex:1;}
+  .btn-sm{padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s;}
+  .btn-sm:hover{background:#b03d24;}
+
+  /* ── Setup ── */
   #setup-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-  .setup-card{background:var(--surface);border-radius:24px;padding:48px 40px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.12);border:1px solid var(--border);}
+  .setup-card{background:var(--surface);border-radius:24px;padding:48px 40px;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.12);border:1px solid var(--border);}
   @media(max-width:520px){.setup-card{padding:32px 20px;}}
   .setup-card h1{font-size:2.2rem;margin-bottom:8px;color:var(--accent);}
   .setup-subtitle{color:var(--ink2);margin-bottom:32px;font-size:14px;}
   .form-group{margin-bottom:20px;}
-  .form-group label{display:block;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px;}
-  .form-group input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-family:inherit;font-size:15px;color:var(--ink);outline:none;transition:border-color 0.2s;}
+  .form-group label{display:block;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px;}
+  .form-group input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-family:inherit;font-size:15px;color:var(--ink);outline:none;transition:border-color .2s;}
   .form-group input:focus{border-color:var(--accent);}
   .person-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
   .person-row{display:flex;gap:8px;align-items:center;}
   .person-row input{flex:1;}
-  .btn-icon{width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;}
+  .btn-icon{width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0;}
   .btn-remove{background:#fce8e4;color:var(--accent);}
   .btn-remove:hover{background:#f8d0c8;}
-  .btn-add-person{background:none;border:1.5px dashed var(--border);border-radius:10px;padding:10px;width:100%;font-family:inherit;font-size:14px;color:var(--ink2);cursor:pointer;transition:all 0.2s;}
+  .btn-add-person{background:none;border:1.5px dashed var(--border);border-radius:10px;padding:10px;width:100%;font-family:inherit;font-size:14px;color:var(--ink2);cursor:pointer;transition:all .2s;}
   .btn-add-person:hover{border-color:var(--accent);color:var(--accent);}
-  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;transition:background 0.2s,transform 0.1s;}
+  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;transition:background .2s,transform .1s;}
   .btn-primary:hover{background:#b03d24;}
-  .btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
   .setup-error{color:var(--red);font-size:13px;margin-bottom:10px;display:none;}
+  /* join existing group */
+  .setup-divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:var(--ink2);font-size:13px;}
+  .setup-divider::before,.setup-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .btn-secondary{background:var(--surface2);color:var(--ink);border:1.5px solid var(--border);border-radius:12px;padding:13px 28px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;width:100%;transition:background .2s;}
+  .btn-secondary:hover{background:var(--border);}
 
-  /* Main */
+  /* ── Main ── */
   #main-screen{display:none;}
   .top-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:12px;flex-wrap:wrap;}
   .top-bar h2{font-size:1.3rem;}
-  .top-bar-right{display:flex;align-items:center;gap:12px;}
-  .group-name-badge{font-size:12px;font-weight:600;background:var(--accent);color:#fff;padding:4px 12px;border-radius:20px;letter-spacing:0.03em;white-space:nowrap;}
+  .top-bar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .group-name-badge{font-size:12px;font-weight:600;background:var(--accent);color:#fff;padding:4px 12px;border-radius:20px;letter-spacing:.03em;white-space:nowrap;}
   .sync-status{font-size:12px;padding:4px 10px;border-radius:20px;white-space:nowrap;}
   .sync-status.synced{background:#d8f3dc;color:var(--green);}
   .sync-status.saving{background:#fff3cd;color:#856404;}
   .sync-status.error{background:#fce8e4;color:var(--red);}
+  /* top bar icon buttons */
+  .btn-topbar{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--ink2);transition:background .15s;white-space:nowrap;}
+  .btn-topbar:hover{background:var(--border);color:var(--ink);}
 
   /* Share bar */
   #share-bar{display:none;align-items:center;gap:10px;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;flex-wrap:wrap;}
   #share-bar label{font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap;}
-  #share-url{flex:1;min-width:200px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;color:var(--ink);background:var(--bg);outline:none;}
-  #copy-btn{padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+  #share-url{flex:1;min-width:160px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;color:var(--ink);background:var(--bg);outline:none;}
+  #copy-btn{padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;}
   #copy-btn:hover{background:#b03d24;}
 
   .main-content{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:390px 1fr;gap:24px;align-items:start;}
@@ -74,56 +110,54 @@
 
   /* Form */
   .form-row{margin-bottom:16px;}
-  .form-row-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink2);margin-bottom:7px;}
-  .form-row input[type=text],.form-row input[type=number],.form-row select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color 0.2s;}
+  .form-row-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:7px;}
+  .form-row input[type=text],.form-row input[type=number],.form-row select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
   .form-row input:focus,.form-row select:focus{border-color:var(--accent);}
   .chip-group{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;min-height:48px;}
-  .chip{display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;user-select:none;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);transition:background 0.15s,border-color 0.15s,color 0.15s;}
+  .chip{display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;user-select:none;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);transition:background .15s,border-color .15s,color .15s;}
   .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .chip-link{font-size:11px;color:var(--ink2);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;}
   .chip-link:hover{color:var(--accent);}
   #custom-amounts{display:none;margin-top:10px;}
   .custom-amount-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
   .custom-amount-row .name-tag{min-width:60px;max-width:80px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .custom-amount-row input{flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color 0.2s;}
+  .custom-amount-row input{flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;transition:border-color .2s;}
   .custom-amount-row input:focus{border-color:var(--accent);}
   .unit-label{font-size:13px;color:var(--ink2);flex-shrink:0;}
   .custom-hint{font-size:12px;color:var(--ink2);margin-top:4px;min-height:18px;}
   .custom-hint.ok{color:var(--green);font-weight:600;}
   .custom-hint.bad{color:var(--red);font-weight:600;}
   .error-msg{color:var(--red);font-size:12px;margin-top:6px;display:none;}
-  .btn-submit{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:4px;transition:background 0.2s;}
+  .btn-submit{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:4px;transition:background .2s;}
   .btn-submit:hover{background:#b03d24;}
-  .btn-submit:disabled{opacity:0.6;cursor:not-allowed;}
+  .btn-submit:disabled{opacity:.6;cursor:not-allowed;}
 
-  /* Right col */
   .right-col{display:flex;flex-direction:column;gap:20px;}
   .expense-item{border-bottom:1px solid var(--border);}
   .expense-item:last-child{border-bottom:none;}
-  .expense-summary{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background 0.15s;}
+  .expense-summary{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;}
   .expense-summary:hover{background:var(--bg);}
   .expense-title{font-weight:600;font-size:14px;}
   .expense-meta{font-size:12px;color:var(--ink2);margin-top:2px;}
   .expense-right{text-align:right;display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .expense-amount{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--accent);}
-  .expand-icon{color:var(--ink2);font-size:11px;transition:transform 0.2s;}
+  .expand-icon{color:var(--ink2);font-size:11px;transition:transform .2s;}
   .expand-icon.open{transform:rotate(180deg);}
   .expense-detail{padding:0 20px 16px;display:none;}
   .expense-detail.open{display:block;}
   .split-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px dashed var(--border);}
   .split-row:last-child{border-bottom:none;}
   .method-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--ink2);margin-left:6px;white-space:nowrap;}
-  .btn-delete{background:#fce8e4;color:var(--accent);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:background 0.15s;flex-shrink:0;}
+  .btn-delete{background:#fce8e4;color:var(--accent);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0;}
   .btn-delete:hover{background:#f8d0c8;}
   .empty-state{padding:32px 20px;text-align:center;color:var(--ink2);font-size:14px;}
   .empty-state .icon{font-size:32px;margin-bottom:8px;}
 
-  /* Ledger */
   .ledger-selector{padding:16px 20px;border-bottom:1px solid var(--border);}
   .ledger-selector select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:14px;color:var(--ink);outline:none;}
   .ledger-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
   .stat-box{padding:16px;background:var(--surface);text-align:center;}
-  .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink2);font-weight:600;}
+  .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);font-weight:600;}
   .stat-value{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-top:4px;}
   .stat-value.positive{color:var(--green);}
   .stat-value.negative{color:var(--red);}
@@ -133,7 +167,7 @@
   .badge-pay{background:#fce8e4;color:var(--red);}
   .badge-ok{background:var(--surface2);color:var(--ink2);}
   .ledger-breakdown{padding:0 20px 16px;}
-  .ledger-breakdown h4{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;}
+  .ledger-breakdown h4{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;}
   .ledger-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .ledger-row:last-child{border-bottom:none;}
   .ledger-row-left{flex:1;padding-right:12px;}
@@ -153,6 +187,85 @@
   <div id="overlay-msg">載入中…</div>
 </div>
 
+<!-- ══ Modal: 管理群組 ══ -->
+<div class="modal-backdrop" id="modal-manage">
+  <div class="modal">
+    <h3>⚙️ 群組管理</h3>
+    <p class="modal-subtitle">修改名稱、新增成員，或切換到其他群組</p>
+
+    <!-- 修改群組名稱 -->
+    <div class="modal-row">
+      <label>群組名稱</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="manage-group-name" maxlength="30" placeholder="輸入新名稱" style="flex:1;">
+        <button class="btn-sm" id="btn-save-name">儲存</button>
+      </div>
+    </div>
+    <div class="modal-error" id="manage-name-error"></div>
+
+    <hr class="modal-divider">
+
+    <!-- 成員列表 + 新增 -->
+    <div class="modal-row">
+      <label>成員管理</label>
+      <div class="modal-person-list" id="manage-person-list"></div>
+      <div class="modal-person-add-row">
+        <input type="text" id="manage-new-person" maxlength="20" placeholder="輸入新成員名稱">
+        <button class="btn-sm" id="btn-add-member">新增</button>
+      </div>
+    </div>
+    <div class="modal-error" id="manage-member-error"></div>
+
+    <hr class="modal-divider">
+
+    <!-- 切換到既有群組 -->
+    <div class="modal-row">
+      <label>切換到既有群組</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="manage-switch-id" placeholder="貼上群組 ID 或完整連結" style="flex:1;">
+        <button class="btn-sm" id="btn-switch-group">切換</button>
+      </div>
+    </div>
+    <div class="modal-error" id="manage-switch-error"></div>
+
+    <hr class="modal-divider">
+
+    <!-- 建立全新群組 -->
+    <div class="modal-row">
+      <label>建立全新群組</label>
+      <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;">建立後會切換到新群組，目前群組資料不會消失，可隨時透過連結回去。</p>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="new-group-name" maxlength="30" placeholder="新群組名稱" style="flex:1;">
+      </div>
+      <div id="new-group-persons" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+      <button class="btn-add-person" id="btn-new-group-add-person" style="margin-bottom:8px;">＋ 新增成員</button>
+      <button class="btn-sm" id="btn-create-new-group" style="width:100%;padding:10px;">建立新群組並切換</button>
+    </div>
+    <div class="modal-error" id="manage-newgroup-error"></div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="btn-manage-close">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal: 加入既有群組 (setup screen) ══ -->
+<div class="modal-backdrop" id="modal-join">
+  <div class="modal">
+    <h3>🔗 加入既有群組</h3>
+    <p class="modal-subtitle">輸入群組 ID 或完整分享連結</p>
+    <div class="modal-row">
+      <label>群組 ID / 連結</label>
+      <input type="text" id="join-group-id" placeholder="例：abc123xyz 或完整 URL">
+    </div>
+    <div class="modal-error" id="join-error"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="btn-join-cancel">取消</button>
+      <button class="btn-modal-primary" id="btn-join-confirm">加入</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ Setup ══ -->
 <div id="setup-screen">
   <div class="setup-card">
@@ -168,7 +281,9 @@
       <button class="btn-add-person" id="btn-add-person">＋ 新增成員</button>
     </div>
     <div class="setup-error" id="setup-error"></div>
-    <button class="btn-primary" id="start-btn">開始分帳 →</button>
+    <button class="btn-primary" id="start-btn">建立新群組 →</button>
+    <div class="setup-divider">或</div>
+    <button class="btn-secondary" id="btn-open-join">加入既有群組</button>
   </div>
 </div>
 
@@ -179,18 +294,17 @@
     <div class="top-bar-right">
       <span class="sync-status synced" id="sync-status">✓ 已同步</span>
       <span class="group-name-badge" id="top-group-name"></span>
+      <button class="btn-topbar" id="btn-open-manage">⚙️ 管理群組</button>
     </div>
   </div>
 
-  <!-- Share bar -->
   <div id="share-bar">
-    <label>🔗 分享連結（其他人開啟即可加入同一群組）</label>
+    <label>🔗 分享連結</label>
     <input type="text" id="share-url" readonly>
     <button id="copy-btn">複製連結</button>
   </div>
 
   <div class="main-content">
-    <!-- Left: Add Expense -->
     <div>
       <div class="card">
         <div class="card-header"><h3><span class="section-icon">➕</span>新增支出</h3></div>
@@ -236,16 +350,13 @@
       </div>
     </div>
 
-    <!-- Right -->
     <div class="right-col">
       <div class="card">
         <div class="card-header">
           <h3><span class="section-icon">📋</span>總帳本</h3>
           <span id="expense-count" style="font-size:13px;color:var(--ink2);"></span>
         </div>
-        <div id="expense-list">
-          <div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>
-        </div>
+        <div id="expense-list"><div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div></div>
       </div>
       <div class="card">
         <div class="card-header"><h3><span class="section-icon">👤</span>角色帳本</h3></div>
@@ -258,15 +369,12 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     Firebase v9 Modular SDK (CDN)
-══════════════════════════════════════════════════════ -->
 <script type="module">
-import { initializeApp }     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc,
-         addDoc, deleteDoc, getDoc,
+         addDoc, updateDoc, deleteDoc, getDoc,
          onSnapshot, query, orderBy,
-         serverTimestamp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+         serverTimestamp }  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ┌──────────────────────────────────────────────────────┐
 // │  ★  請將下方換成您的 Firebase 專案設定              │
@@ -280,14 +388,13 @@ const firebaseConfig = {
   appId:             "1:223183892907:web:a271d3548d89630ec062ee"
 };
 
-// ── Init Firebase ────────────────────────────────────────
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-// ── In-memory state ──────────────────────────────────────
+// ── State ────────────────────────────────────────────────
 let groupId       = null;
-let persons       = [];   // [{ id, name }]
-let expenses      = [];   // [{ id, title, total, paidBy, splitMethod, splits }]
+let persons       = [];
+let expenses      = [];
 let unsubExpenses = null;
 
 const METHOD_LABELS = { equal:'平均分攤', custom:'自訂金額', percent:'按比例' };
@@ -297,434 +404,414 @@ const METHOD_LABELS = { equal:'平均分攤', custom:'自訂金額', percent:'�
 // ════════════════════════════════════════════════════════
 const fmt = n => (Math.round(n*100)/100).toLocaleString('zh-TW',{minimumFractionDigits:0,maximumFractionDigits:2});
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const $ = id => document.getElementById(id);
 
-function showErr(el, msg){ el.textContent = msg; el.style.display = 'block'; }
-function hideErr(el){ el.style.display = 'none'; }
+function showErr(el, msg){ el.textContent=msg; el.style.display='block'; }
+function hideErr(el){ el.style.display='none'; }
 
-function setSyncStatus(status){
-  const el  = document.getElementById('sync-status');
-  const map = { synced:['✓ 已同步','synced'], saving:['↑ 儲存中','saving'], error:['✕ 同步失敗','error'] };
-  const [text, cls] = map[status] || map.synced;
-  el.textContent = text;
-  el.className   = 'sync-status ' + cls;
+function setSyncStatus(s){
+  const el=$('sync-status'), map={synced:['✓ 已同步','synced'],saving:['↑ 儲存中','saving'],error:['✕ 同步失敗','error']};
+  const [t,c]=map[s]||map.synced; el.textContent=t; el.className='sync-status '+c;
 }
+function showOverlay(msg){ $('overlay-msg').textContent=msg||'載入中…'; $('loading-overlay').style.display='flex'; }
+function hideOverlay(){ $('loading-overlay').style.display='none'; }
 
-function showOverlay(msg){
-  document.getElementById('overlay-msg').textContent = msg || '載入中…';
-  document.getElementById('loading-overlay').style.display = 'flex';
-}
-function hideOverlay(){
-  document.getElementById('loading-overlay').style.display = 'none';
+// Extract group ID from raw input (ID string or full URL)
+function parseGroupId(raw){
+  raw = raw.trim();
+  try {
+    const u = new URL(raw);
+    return u.searchParams.get('g') || '';
+  } catch(e){ return raw; }
 }
 
 // ════════════════════════════════════════════════════════
 // SETUP SCREEN
 // ════════════════════════════════════════════════════════
+addPersonRow(); addPersonRow();
 
-// Add initial two rows once DOM is ready
-addPersonRow();
-addPersonRow();
+const urlGParam = new URLSearchParams(location.search).get('g');
+if(urlGParam) autoJoinGroup(urlGParam);
 
-// Check URL for ?g=groupId → auto-join
-const urlParams = new URLSearchParams(location.search);
-const gParam    = urlParams.get('g');
-if(gParam) autoJoinGroup(gParam);
-
-// ── Button listeners for setup screen ───────────────────
-document.getElementById('btn-add-person').addEventListener('click', addPersonRow);
-document.getElementById('start-btn').addEventListener('click', startApp);
+$('btn-add-person').addEventListener('click', addPersonRow);
+$('start-btn').addEventListener('click', startApp);
+$('btn-open-join').addEventListener('click', () => openModal('modal-join'));
 
 function addPersonRow(){
-  const list = document.getElementById('person-list');
+  const list = $('person-list');
   const row  = document.createElement('div');
   row.className = 'person-row';
-
   const input = document.createElement('input');
-  input.type        = 'text';
-  input.placeholder = '成員名稱';
-  input.maxLength   = 20;
-
+  input.type='text'; input.placeholder='成員名稱'; input.maxLength=20;
   const btn = document.createElement('button');
-  btn.type      = 'button';
-  btn.className = 'btn-icon btn-remove';
-  btn.title     = '移除';
-  btn.textContent = '✕';
-  btn.addEventListener('click', () => {
-    if(document.getElementById('person-list').children.length > 1) row.remove();
-  });
-
-  row.appendChild(input);
-  row.appendChild(btn);
-  list.appendChild(row);
-  input.focus();
+  btn.type='button'; btn.className='btn-icon btn-remove'; btn.textContent='✕';
+  btn.addEventListener('click', () => { if(list.children.length>1) row.remove(); });
+  row.appendChild(input); row.appendChild(btn); list.appendChild(row); input.focus();
 }
 
 async function autoJoinGroup(gid){
   showOverlay('載入群組中…');
   try {
-    const snap = await getDoc(doc(db, 'groups', gid));
+    const snap = await getDoc(doc(db,'groups',gid));
     if(!snap.exists()){ hideOverlay(); alert('找不到此分帳群組，請重新建立。'); return; }
-    groupId = gid;
-    persons = snap.data().persons || [];
+    groupId=gid; persons=snap.data().persons||[];
     enterMainScreen(snap.data().name);
-  } catch(e){
-    hideOverlay();
-    alert('載入群組失敗：' + e.message);
-  }
+  } catch(e){ hideOverlay(); alert('載入群組失敗：'+e.message); }
 }
 
 async function startApp(){
-  const groupName = document.getElementById('group-name').value.trim();
+  const groupName = $('group-name').value.trim();
   const inputs    = document.querySelectorAll('#person-list .person-row input');
-  const names     = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
-  const errEl     = document.getElementById('setup-error');
-  hideErr(errEl);
+  const names     = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  const errEl     = $('setup-error'); hideErr(errEl);
 
   if(!groupName)                           { showErr(errEl,'請輸入團體名稱'); return; }
-  if(names.length < 1)                     { showErr(errEl,'請至少新增一位成員'); return; }
-  if(new Set(names).size !== names.length) { showErr(errEl,'成員名稱不可重複'); return; }
+  if(names.length<1)                       { showErr(errEl,'請至少新增一位成員'); return; }
+  if(new Set(names).size!==names.length)   { showErr(errEl,'成員名稱不可重複'); return; }
 
-  const startBtn = document.getElementById('start-btn');
-  startBtn.disabled    = true;
-  startBtn.textContent = '建立中…';
-
+  const btn=$('start-btn'); btn.disabled=true; btn.textContent='建立中…';
   try {
-    persons = names.map((n, i) => ({ id: 'p' + (i + 1), name: n }));
-    const ref = await addDoc(collection(db, 'groups'), {
-      name: groupName, persons, createdAt: serverTimestamp()
-    });
-    groupId = ref.id;
+    persons = names.map((n,i)=>({ id:'p'+(i+1), name:n }));
+    const ref = await addDoc(collection(db,'groups'),{ name:groupName, persons, createdAt:serverTimestamp() });
+    groupId=ref.id;
     enterMainScreen(groupName);
   } catch(e){
-    showErr(errEl, 'Firebase 連線失敗：' + e.message);
-    startBtn.disabled    = false;
-    startBtn.textContent = '開始分帳 →';
+    showErr(errEl,'Firebase 連線失敗：'+e.message);
+    btn.disabled=false; btn.textContent='建立新群組 →';
   }
 }
 
+// ── Join existing group (setup modal) ───────────────────
+$('btn-join-cancel').addEventListener('click', ()=>closeModal('modal-join'));
+$('btn-join-confirm').addEventListener('click', async ()=>{
+  const raw   = $('join-group-id').value.trim();
+  const errEl = $('join-error'); hideErr(errEl);
+  if(!raw){ showErr(errEl,'請輸入群組 ID 或連結'); return; }
+  const gid = parseGroupId(raw);
+  if(!gid){ showErr(errEl,'無法解析群組 ID，請確認格式'); return; }
+  const btn=$('btn-join-confirm'); btn.disabled=true; btn.textContent='載入中…';
+  try {
+    const snap = await getDoc(doc(db,'groups',gid));
+    if(!snap.exists()){ showErr(errEl,'找不到此群組，請確認 ID'); btn.disabled=false; btn.textContent='加入'; return; }
+    groupId=gid; persons=snap.data().persons||[];
+    closeModal('modal-join');
+    enterMainScreen(snap.data().name);
+    // update URL
+    history.replaceState(null,'','?g='+gid);
+  } catch(e){ showErr(errEl,'載入失敗：'+e.message); }
+  finally { btn.disabled=false; btn.textContent='加入'; }
+});
+
 // ════════════════════════════════════════════════════════
-// MAIN SCREEN
+// ENTER MAIN SCREEN
 // ════════════════════════════════════════════════════════
 function enterMainScreen(groupName){
-  document.getElementById('setup-screen').style.display = 'none';
-  document.getElementById('main-screen').style.display  = 'block';
-  document.getElementById('top-group-name').textContent = groupName;
-
-  // Share bar
-  const shareUrl = location.origin + location.pathname + '?g=' + groupId;
-  document.getElementById('share-url').value          = shareUrl;
-  document.getElementById('share-bar').style.display  = 'flex';
-
+  $('setup-screen').style.display='none';
+  $('main-screen').style.display='block';
+  $('top-group-name').textContent=groupName;
+  const shareUrl=location.origin+location.pathname+'?g='+groupId;
+  $('share-url').value=shareUrl;
+  $('share-bar').style.display='flex';
   buildFormControls();
   subscribeExpenses();
   hideOverlay();
 }
 
-// ── Firestore real-time listener ────────────────────────
 function subscribeExpenses(){
   if(unsubExpenses) unsubExpenses();
-  const q = query(
-    collection(db, 'groups', groupId, 'expenses'),
-    orderBy('createdAt', 'asc')
-  );
-  unsubExpenses = onSnapshot(q, snap => {
-    expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderExpenseList();
-    renderLedger();
-    setSyncStatus('synced');
-  }, err => {
-    console.error(err);
-    setSyncStatus('error');
-  });
+  const q=query(collection(db,'groups',groupId,'expenses'),orderBy('createdAt','asc'));
+  unsubExpenses=onSnapshot(q, snap=>{
+    expenses=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderExpenseList(); renderLedger(); setSyncStatus('synced');
+  }, err=>{ console.error(err); setSyncStatus('error'); });
 }
 
-// ── Copy share link ──────────────────────────────────────
-document.getElementById('copy-btn').addEventListener('click', () => {
-  const input = document.getElementById('share-url');
-  input.select(); input.setSelectionRange(0, 9999);
-  navigator.clipboard.writeText(input.value).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = '已複製！';
-    setTimeout(() => btn.textContent = '複製連結', 2000);
+$('copy-btn').addEventListener('click',()=>{
+  const inp=$('share-url'); inp.select(); inp.setSelectionRange(0,9999);
+  navigator.clipboard.writeText(inp.value).then(()=>{
+    const b=$('copy-btn'); b.textContent='已複製！'; setTimeout(()=>b.textContent='複製連結',2000);
   });
 });
 
 // ════════════════════════════════════════════════════════
-// FORM CONTROLS
+// GROUP MANAGEMENT MODAL
+// ════════════════════════════════════════════════════════
+$('btn-open-manage').addEventListener('click', openManageModal);
+$('btn-manage-close').addEventListener('click', ()=>closeModal('modal-manage'));
+
+function openManageModal(){
+  // Pre-fill name
+  $('manage-group-name').value = $('top-group-name').textContent;
+  hideErr($('manage-name-error'));
+  hideErr($('manage-member-error'));
+  hideErr($('manage-switch-error'));
+  hideErr($('manage-newgroup-error'));
+  $('manage-switch-id').value='';
+  // Init new-group person rows with 2 blank rows
+  const container = $('new-group-persons');
+  container.innerHTML = '';
+  addNewGroupPersonRow(); addNewGroupPersonRow();
+  $('new-group-name').value = '';
+  renderManagePersonList();
+  openModal('modal-manage');
+}
+
+function addNewGroupPersonRow(){
+  const container = $('new-group-persons');
+  const row = document.createElement('div');
+  row.className = 'person-row';
+  const input = document.createElement('input');
+  input.type='text'; input.placeholder='成員名稱'; input.maxLength=20;
+  const btn = document.createElement('button');
+  btn.type='button'; btn.className='btn-icon btn-remove'; btn.textContent='✕';
+  btn.addEventListener('click', () => { if(container.children.length > 1) row.remove(); });
+  row.appendChild(input); row.appendChild(btn); container.appendChild(row); input.focus();
+}
+
+function renderManagePersonList(){
+  const list=$('manage-person-list');
+  list.innerHTML='';
+  persons.forEach(p=>{
+    const item=document.createElement('div');
+    item.className='modal-person-item';
+    item.innerHTML=`<span class="p-name">${esc(p.name)}</span><span class="p-badge">ID: ${esc(p.id)}</span>`;
+    list.appendChild(item);
+  });
+  if(persons.length===0){
+    list.innerHTML='<div style="color:var(--ink2);font-size:13px;padding:4px 0;">尚無成員</div>';
+  }
+}
+
+// ── Save group name ──────────────────────────────────────
+$('btn-save-name').addEventListener('click', async ()=>{
+  const newName=$('manage-group-name').value.trim();
+  const errEl=$('manage-name-error'); hideErr(errEl);
+  if(!newName){ showErr(errEl,'請輸入群組名稱'); return; }
+  const btn=$('btn-save-name'); btn.disabled=true; btn.textContent='儲存中…';
+  try {
+    await updateDoc(doc(db,'groups',groupId),{ name:newName });
+    $('top-group-name').textContent=newName;
+    // Update share URL (same groupId, just display name changes)
+    btn.textContent='✓ 已儲存';
+    setTimeout(()=>{ btn.textContent='儲存'; btn.disabled=false; },1500);
+  } catch(e){
+    showErr(errEl,'儲存失敗：'+e.message); btn.disabled=false; btn.textContent='儲存';
+  }
+});
+
+// ── Add new member ───────────────────────────────────────
+$('btn-add-member').addEventListener('click', async ()=>{
+  const name=$('manage-new-person').value.trim();
+  const errEl=$('manage-member-error'); hideErr(errEl);
+  if(!name){ showErr(errEl,'請輸入成員名稱'); return; }
+  if(persons.some(p=>p.name===name)){ showErr(errEl,'此成員名稱已存在'); return; }
+
+  // Generate new ID: p{n+1} but ensure uniqueness
+  const usedNums = persons.map(p=>parseInt(p.id.replace('p',''))||0);
+  const nextNum  = Math.max(0,...usedNums)+1;
+  const newPerson={ id:'p'+nextNum, name };
+
+  const btn=$('btn-add-member'); btn.disabled=true; btn.textContent='新增中…';
+  try {
+    const updatedPersons=[...persons, newPerson];
+    await updateDoc(doc(db,'groups',groupId),{ persons:updatedPersons });
+    persons=updatedPersons;
+    $('manage-new-person').value='';
+    renderManagePersonList();
+    // Rebuild form controls to include new member
+    rebuildFormPersons();
+    btn.textContent='✓ 已新增';
+    setTimeout(()=>{ btn.textContent='新增'; btn.disabled=false; },1500);
+  } catch(e){
+    showErr(errEl,'新增失敗：'+e.message); btn.disabled=false; btn.textContent='新增';
+  }
+});
+
+// ── Switch group ─────────────────────────────────────────
+$('btn-switch-group').addEventListener('click', async ()=>{
+  const raw=$('manage-switch-id').value.trim();
+  const errEl=$('manage-switch-error'); hideErr(errEl);
+  if(!raw){ showErr(errEl,'請輸入群組 ID 或連結'); return; }
+  const gid=parseGroupId(raw);
+  if(!gid){ showErr(errEl,'無法解析群組 ID'); return; }
+  if(gid===groupId){ showErr(errEl,'已經在此群組中'); return; }
+
+  const btn=$('btn-switch-group'); btn.disabled=true; btn.textContent='切換中…';
+  try {
+    const snap=await getDoc(doc(db,'groups',gid));
+    if(!snap.exists()){ showErr(errEl,'找不到此群組，請確認 ID'); return; }
+
+    // Stop current listener
+    if(unsubExpenses){ unsubExpenses(); unsubExpenses=null; }
+
+    groupId=gid; persons=snap.data().persons||[]; expenses=[];
+    const newName=snap.data().name;
+    $('top-group-name').textContent=newName;
+    const shareUrl=location.origin+location.pathname+'?g='+gid;
+    $('share-url').value=shareUrl;
+    history.replaceState(null,'','?g='+gid);
+
+    closeModal('modal-manage');
+    buildFormControls();   // full rebuild with new persons
+    subscribeExpenses();   // new listener
+    $('manage-switch-id').value='';
+  } catch(e){ showErr(errEl,'切換失敗：'+e.message); }
+  finally { btn.disabled=false; btn.textContent='切換'; }
+});
+
+// ── Rebuild only person-related selectors (after add member) ──
+function rebuildFormPersons(){
+  $('exp-payer').innerHTML=persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  buildSplitterChips();
+  $('ledger-person').innerHTML=persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  renderLedger();
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL OPEN / CLOSE
+// ════════════════════════════════════════════════════════
+function openModal(id){ $(id).classList.add('open'); }
+function closeModal(id){ $(id).classList.remove('open'); }
+// Click backdrop to close
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+  bd.addEventListener('click', e=>{ if(e.target===bd) bd.classList.remove('open'); });
+});
+
+// ════════════════════════════════════════════════════════
+// FORM CONTROLS (expense form)
 // ════════════════════════════════════════════════════════
 function buildFormControls(){
-  // Payer dropdown
-  document.getElementById('exp-payer').innerHTML =
-    persons.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-
-  // Splitter chips
+  $('exp-payer').innerHTML=persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
   buildSplitterChips();
-
-  // Ledger person dropdown
-  document.getElementById('ledger-person').innerHTML =
-    persons.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-
-  // Listeners (bind once after DOM elements exist)
-  document.getElementById('btn-select-all').addEventListener('click', selectAllSplitters);
-  document.getElementById('btn-clear-all').addEventListener('click', clearAllSplitters);
-  document.getElementById('split-method').addEventListener('change', onSplitMethodChange);
-  document.getElementById('exp-amount').addEventListener('input', onAmountInput);
-  document.getElementById('submit-btn').addEventListener('click', addExpense);
-  document.getElementById('ledger-person').addEventListener('change', renderLedger);
+  $('ledger-person').innerHTML=persons.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  $('btn-select-all').addEventListener('click', selectAllSplitters);
+  $('btn-clear-all').addEventListener('click', clearAllSplitters);
+  $('split-method').addEventListener('change', onSplitMethodChange);
+  $('exp-amount').addEventListener('input', onAmountInput);
+  $('submit-btn').addEventListener('click', addExpense);
+  $('ledger-person').addEventListener('change', renderLedger);
 }
 
 function buildSplitterChips(){
-  const cg = document.getElementById('splitter-chips');
-  cg.innerHTML = '';
-  persons.forEach(p => {
-    const chip       = document.createElement('button');
-    chip.type        = 'button';
-    chip.className   = 'chip active';
-    chip.textContent = p.name;
-    chip.dataset.pid = p.id;
-    chip.addEventListener('click', function(){
-      this.classList.toggle('active');
-      refreshCustomInputs();
-    });
+  const cg=$('splitter-chips'); cg.innerHTML='';
+  persons.forEach(p=>{
+    const chip=document.createElement('button');
+    chip.type='button'; chip.className='chip active'; chip.textContent=p.name; chip.dataset.pid=p.id;
+    chip.addEventListener('click',function(){ this.classList.toggle('active'); refreshCustomInputs(); });
     cg.appendChild(chip);
   });
 }
 
-function getActiveIds(){
-  return Array.from(document.querySelectorAll('#splitter-chips .chip.active'))
-              .map(c => c.dataset.pid);
-}
-
-function selectAllSplitters(){
-  document.querySelectorAll('#splitter-chips .chip').forEach(c => c.classList.add('active'));
-  refreshCustomInputs();
-}
-function clearAllSplitters(){
-  document.querySelectorAll('#splitter-chips .chip').forEach(c => c.classList.remove('active'));
-  refreshCustomInputs();
-}
+function getActiveIds(){ return Array.from(document.querySelectorAll('#splitter-chips .chip.active')).map(c=>c.dataset.pid); }
+function selectAllSplitters(){ document.querySelectorAll('#splitter-chips .chip').forEach(c=>c.classList.add('active')); refreshCustomInputs(); }
+function clearAllSplitters(){ document.querySelectorAll('#splitter-chips .chip').forEach(c=>c.classList.remove('active')); refreshCustomInputs(); }
 
 function onSplitMethodChange(){
-  const method = document.getElementById('split-method').value;
-  const box    = document.getElementById('custom-amounts');
-  if(method === 'equal'){
-    box.style.display = 'none';
-  } else {
-    box.style.display = 'block';
-    rebuildCustomInputs();
-  }
+  const method=$('split-method').value, box=$('custom-amounts');
+  if(method==='equal'){ box.style.display='none'; } else { box.style.display='block'; rebuildCustomInputs(); }
 }
-
-function onAmountInput(){
-  if(document.getElementById('split-method').value !== 'equal') rebuildCustomInputs();
-}
-
-function refreshCustomInputs(){
-  if(document.getElementById('split-method').value !== 'equal') rebuildCustomInputs();
-}
+function onAmountInput(){ if($('split-method').value!=='equal') rebuildCustomInputs(); }
+function refreshCustomInputs(){ if($('split-method').value!=='equal') rebuildCustomInputs(); }
 
 function rebuildCustomInputs(){
-  const ids    = getActiveIds();
-  const method = document.getElementById('split-method').value;
-  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-  const container = document.getElementById('custom-inputs');
-  container.innerHTML = '';
-  if(ids.length === 0){ updateCustomHint(); return; }
-
-  ids.forEach(pid => {
-    const person = persons.find(p => p.id === pid);
-    const defVal = method === 'percent'
-      ? (100 / ids.length).toFixed(1)
-      : (amount > 0 ? (amount / ids.length).toFixed(2) : '');
-
-    const row = document.createElement('div');
-    row.className = 'custom-amount-row';
-
-    const nameSpan = document.createElement('span');
-    nameSpan.className   = 'name-tag';
-    nameSpan.textContent = person.name;
-
-    const inp = document.createElement('input');
-    inp.type        = 'number';
-    inp.dataset.pid = pid;
-    inp.min         = '0';
-    inp.step        = 'any';
-    inp.placeholder = method === 'percent' ? '%' : '金額';
-    inp.value       = defVal;
-    inp.addEventListener('input', updateCustomHint);
-
-    const unit = document.createElement('span');
-    unit.className   = 'unit-label';
-    unit.textContent = method === 'percent' ? '%' : '元';
-
-    row.appendChild(nameSpan);
-    row.appendChild(inp);
-    row.appendChild(unit);
-    container.appendChild(row);
+  const ids=getActiveIds(), method=$('split-method').value, amount=parseFloat($('exp-amount').value)||0;
+  const container=$('custom-inputs'); container.innerHTML='';
+  if(ids.length===0){ updateCustomHint(); return; }
+  ids.forEach(pid=>{
+    const person=persons.find(p=>p.id===pid);
+    const defVal=method==='percent'?(100/ids.length).toFixed(1):(amount>0?(amount/ids.length).toFixed(2):'');
+    const row=document.createElement('div'); row.className='custom-amount-row';
+    const nameSpan=document.createElement('span'); nameSpan.className='name-tag'; nameSpan.textContent=person.name;
+    const inp=document.createElement('input');
+    inp.type='number'; inp.dataset.pid=pid; inp.min='0'; inp.step='any';
+    inp.placeholder=method==='percent'?'%':'金額'; inp.value=defVal;
+    inp.addEventListener('input',updateCustomHint);
+    const unit=document.createElement('span'); unit.className='unit-label'; unit.textContent=method==='percent'?'%':'元';
+    row.appendChild(nameSpan); row.appendChild(inp); row.appendChild(unit); container.appendChild(row);
   });
   updateCustomHint();
 }
 
 function updateCustomHint(){
-  const method = document.getElementById('split-method').value;
-  if(method === 'equal') return;
-  const hint   = document.getElementById('custom-hint');
-  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-  const inputs = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-  const sum    = inputs.reduce((acc, i) => acc + (parseFloat(i.value) || 0), 0);
-
-  if(method === 'custom'){
-    if(sum === 0 && amount === 0){ hint.textContent = ''; hint.className = 'custom-hint'; return; }
-    const diff = Math.round((amount - sum) * 100) / 100;
-    if(Math.abs(diff) < 0.01){
-      hint.textContent = `✓ 合計 $${fmt(sum)}，與總額相符`;
-      hint.className = 'custom-hint ok';
-    } else {
-      hint.textContent = `合計 $${fmt(sum)} ／ 總額 $${fmt(amount)}，差額 $${fmt(diff)}`;
-      hint.className = 'custom-hint bad';
-    }
+  const method=$('split-method').value; if(method==='equal') return;
+  const hint=$('custom-hint'), amount=parseFloat($('exp-amount').value)||0;
+  const sum=Array.from(document.querySelectorAll('#custom-inputs input[data-pid]')).reduce((acc,i)=>acc+(parseFloat(i.value)||0),0);
+  if(method==='custom'){
+    if(sum===0&&amount===0){hint.textContent='';hint.className='custom-hint';return;}
+    const diff=Math.round((amount-sum)*100)/100;
+    if(Math.abs(diff)<0.01){hint.textContent=`✓ 合計 $${fmt(sum)}，與總額相符`;hint.className='custom-hint ok';}
+    else{hint.textContent=`合計 $${fmt(sum)} ／ 總額 $${fmt(amount)}，差額 $${fmt(diff)}`;hint.className='custom-hint bad';}
   } else {
-    const diff = Math.round((100 - sum) * 10) / 10;
-    if(Math.abs(diff) < 0.1){
-      hint.textContent = `✓ 合計 ${sum.toFixed(1)}%`;
-      hint.className = 'custom-hint ok';
-    } else {
-      hint.textContent = `合計 ${sum.toFixed(1)}%，需達 100%（差 ${diff.toFixed(1)}%）`;
-      hint.className = 'custom-hint bad';
-    }
+    const diff=Math.round((100-sum)*10)/10;
+    if(Math.abs(diff)<0.1){hint.textContent=`✓ 合計 ${sum.toFixed(1)}%`;hint.className='custom-hint ok';}
+    else{hint.textContent=`合計 ${sum.toFixed(1)}%，需達 100%（差 ${diff.toFixed(1)}%）`;hint.className='custom-hint bad';}
   }
 }
 
 // ════════════════════════════════════════════════════════
-// ADD EXPENSE → Firestore
+// ADD EXPENSE
 // ════════════════════════════════════════════════════════
 async function addExpense(){
-  const title   = document.getElementById('exp-title').value.trim();
-  const amount  = parseFloat(document.getElementById('exp-amount').value);
-  const payerId = document.getElementById('exp-payer').value;
-  const method  = document.getElementById('split-method').value;
-  const ids     = getActiveIds();
-  const errEl   = document.getElementById('form-error');
-  hideErr(errEl);
+  const title=$('exp-title').value.trim(), amount=parseFloat($('exp-amount').value);
+  const payerId=$('exp-payer').value, method=$('split-method').value, ids=getActiveIds();
+  const errEl=$('form-error'); hideErr(errEl);
 
-  // ── Validation ──────────────────────────────────────
-  if(!title)                 { showErr(errEl, '請輸入項目名稱'); return; }
-  if(!amount || amount <= 0) { showErr(errEl, '金額必須大於 0'); return; }
-  if(ids.length === 0)       { showErr(errEl, '請至少選擇一位分攤對象'); return; }
+  if(!title){showErr(errEl,'請輸入項目名稱');return;}
+  if(!amount||amount<=0){showErr(errEl,'金額必須大於 0');return;}
+  if(ids.length===0){showErr(errEl,'請至少選擇一位分攤對象');return;}
 
-  // ── Build splits ────────────────────────────────────
-  let splits = [];
-
-  if(method === 'equal'){
-    // 平均分攤：最後一人吸收捨入差
-    const each = Math.floor((amount / ids.length) * 100) / 100;
-    const last  = Math.round((amount - each * (ids.length - 1)) * 100) / 100;
-    splits = ids.map((pid, i) => ({
-      personId: pid,
-      amount:   i === ids.length - 1 ? last : each
-    }));
-
-  } else if(method === 'custom'){
-    // 自訂金額：驗證合計
-    const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-    let sum = 0;
+  let splits=[];
+  if(method==='equal'){
+    const each=Math.floor((amount/ids.length)*100)/100;
+    const last=Math.round((amount-each*(ids.length-1))*100)/100;
+    splits=ids.map((pid,i)=>({personId:pid,amount:i===ids.length-1?last:each}));
+  } else if(method==='custom'){
+    const inps=Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
+    let sum=0;
     for(const inp of inps){
-      const v = parseFloat(inp.value) || 0;
-      if(v < 0){ showErr(errEl, '分攤金額不可為負數'); return; }
-      sum += v;
-      splits.push({ personId: inp.dataset.pid, amount: Math.round(v * 100) / 100 });
+      const v=parseFloat(inp.value)||0;
+      if(v<0){showErr(errEl,'分攤金額不可為負數');return;}
+      sum+=v; splits.push({personId:inp.dataset.pid,amount:Math.round(v*100)/100});
     }
-    if(Math.abs(sum - amount) > 0.01){
-      showErr(errEl, `自訂金額合計 $${fmt(sum)}，與總額 $${fmt(amount)} 不符，請調整`); return;
-    }
-
-  } else if(method === 'percent'){
-    // 按比例：驗證合計 100%，最後一人吸收捨入差
-    const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-    let pctSum = 0;
-    const pcts = inps.map(inp => {
-      const v = parseFloat(inp.value) || 0;
-      pctSum += v;
-      return { pid: inp.dataset.pid, pct: v };
-    });
-    if(Math.abs(pctSum - 100) > 0.1){
-      showErr(errEl, `比例合計 ${pctSum.toFixed(1)}%，需等於 100%`); return;
-    }
-    let assigned = 0;
-    splits = pcts.map((item, i) => {
-      let amt;
-      if(i === pcts.length - 1){
-        amt = Math.round((amount - assigned) * 100) / 100;
-      } else {
-        amt = Math.round((amount * item.pct / 100) * 100) / 100;
-        assigned += amt;
-      }
-      return { personId: item.pid, amount: amt };
+    if(Math.abs(sum-amount)>0.01){showErr(errEl,`自訂金額合計 $${fmt(sum)}，與總額 $${fmt(amount)} 不符，請調整`);return;}
+  } else if(method==='percent'){
+    const inps=Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
+    let pctSum=0;
+    const pcts=inps.map(inp=>{const v=parseFloat(inp.value)||0;pctSum+=v;return{pid:inp.dataset.pid,pct:v};});
+    if(Math.abs(pctSum-100)>0.1){showErr(errEl,`比例合計 ${pctSum.toFixed(1)}%，需等於 100%`);return;}
+    let assigned=0;
+    splits=pcts.map((item,i)=>{
+      let amt=i===pcts.length-1?Math.round((amount-assigned)*100)/100:Math.round((amount*item.pct/100)*100)/100;
+      if(i<pcts.length-1) assigned+=amt;
+      return{personId:item.pid,amount:amt};
     });
   }
 
-  // ── Save to Firestore ────────────────────────────────
-  const btn = document.getElementById('submit-btn');
-  btn.disabled    = true;
-  btn.textContent = '儲存中…';
-  setSyncStatus('saving');
-
+  const btn=$('submit-btn'); btn.disabled=true; btn.textContent='儲存中…'; setSyncStatus('saving');
   try {
-    await addDoc(collection(db, 'groups', groupId, 'expenses'), {
-      title, total: amount, paidBy: payerId,
-      splitMethod: method, splits,
-      createdAt: serverTimestamp()
-    });
-    // Reset form
-    document.getElementById('exp-title').value        = '';
-    document.getElementById('exp-amount').value       = '';
-    document.getElementById('split-method').value     = 'equal';
-    document.getElementById('custom-amounts').style.display = 'none';
-    document.getElementById('custom-inputs').innerHTML = '';
-    document.getElementById('custom-hint').textContent = '';
-    hideErr(errEl);
-    selectAllSplitters();
-    // onSnapshot will auto-update the list
-  } catch(e){
-    showErr(errEl, '儲存失敗：' + e.message);
-    setSyncStatus('error');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = '記錄支出';
-  }
+    await addDoc(collection(db,'groups',groupId,'expenses'),{title,total:amount,paidBy:payerId,splitMethod:method,splits,createdAt:serverTimestamp()});
+    $('exp-title').value=''; $('exp-amount').value='';
+    $('split-method').value='equal'; $('custom-amounts').style.display='none';
+    $('custom-inputs').innerHTML=''; $('custom-hint').textContent='';
+    hideErr(errEl); selectAllSplitters();
+  } catch(e){showErr(errEl,'儲存失敗：'+e.message);setSyncStatus('error');}
+  finally{btn.disabled=false;btn.textContent='記錄支出';}
 }
 
 // ════════════════════════════════════════════════════════
 // RENDER EXPENSE LIST
 // ════════════════════════════════════════════════════════
 function renderExpenseList(){
-  const container = document.getElementById('expense-list');
-  const countEl   = document.getElementById('expense-count');
-  countEl.textContent = expenses.length ? `共 ${expenses.length} 筆` : '';
-
-  if(expenses.length === 0){
-    container.innerHTML = `<div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>`;
-    return;
-  }
-
-  // Show newest first (reverse without mutating)
-  const reversed = expenses.slice().reverse();
-  container.innerHTML = '';
-
-  reversed.forEach(exp => {
-    const payer     = persons.find(p => p.id === exp.paidBy);
-    const payerName = payer ? payer.name : '?';
-    const mLabel    = METHOD_LABELS[exp.splitMethod] || exp.splitMethod;
-    const splits    = exp.splits || [];
-
-    // ── Outer item div ──
-    const item = document.createElement('div');
-    item.className = 'expense-item';
-
-    // ── Summary row ──
-    const summary = document.createElement('div');
-    summary.className = 'expense-summary';
-    summary.innerHTML = `
+  const container=$('expense-list'), countEl=$('expense-count');
+  countEl.textContent=expenses.length?`共 ${expenses.length} 筆`:'';
+  if(expenses.length===0){container.innerHTML=`<div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>`;return;}
+  container.innerHTML='';
+  expenses.slice().reverse().forEach(exp=>{
+    const payer=persons.find(p=>p.id===exp.paidBy), payerName=payer?payer.name:'?';
+    const mLabel=METHOD_LABELS[exp.splitMethod]||exp.splitMethod, splits=exp.splits||[];
+    const item=document.createElement('div'); item.className='expense-item';
+    const summary=document.createElement('div'); summary.className='expense-summary';
+    summary.innerHTML=`
       <div style="min-width:0;">
         <div class="expense-title">${esc(exp.title)}</div>
         <div class="expense-meta">${esc(payerName)} 付款 · ${splits.length} 人 <span class="method-badge">${mLabel}</span></div>
@@ -734,112 +821,78 @@ function renderExpenseList(){
         <button class="btn-delete" data-id="${exp.id}">刪除</button>
         <span class="expand-icon">▼</span>
       </div>`;
-
-    // ── Detail block ──
-    const detail = document.createElement('div');
-    detail.className = 'expense-detail';
-    detail.innerHTML = `<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">分攤明細（${mLabel}）</div>` +
-      splits.map(s => {
-        const person = persons.find(p => p.id === s.personId);
-        const extra  = exp.splitMethod === 'percent'
-          ? ` <span style="color:var(--ink2);font-size:11px;">(${(s.amount/exp.total*100).toFixed(1)}%)</span>` : '';
-        return `<div class="split-row">
-          <span>${esc(person ? person.name : '?')}</span>
-          <span><strong>$${fmt(s.amount)}</strong>${extra}</span>
-        </div>`;
+    const detail=document.createElement('div'); detail.className='expense-detail';
+    detail.innerHTML=`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">分攤明細（${mLabel}）</div>`+
+      splits.map(s=>{
+        const person=persons.find(p=>p.id===s.personId);
+        const extra=exp.splitMethod==='percent'?` <span style="color:var(--ink2);font-size:11px;">(${(s.amount/exp.total*100).toFixed(1)}%)</span>`:'';
+        return `<div class="split-row"><span>${esc(person?person.name:'?')}</span><span><strong>$${fmt(s.amount)}</strong>${extra}</span></div>`;
       }).join('');
-
-    // Toggle expand
-    summary.addEventListener('click', (e) => {
-      // Don't toggle if delete button was clicked
+    summary.addEventListener('click',e=>{
       if(e.target.classList.contains('btn-delete')) return;
       detail.classList.toggle('open');
-      summary.querySelector('.expand-icon').classList.toggle('open', detail.classList.contains('open'));
+      summary.querySelector('.expand-icon').classList.toggle('open',detail.classList.contains('open'));
     });
-
-    // Delete button
-    summary.querySelector('.btn-delete').addEventListener('click', async (e) => {
+    summary.querySelector('.btn-delete').addEventListener('click',async e=>{
       e.stopPropagation();
       if(!confirm('確定要刪除這筆支出嗎？')) return;
       setSyncStatus('saving');
-      try {
-        await deleteDoc(doc(db, 'groups', groupId, 'expenses', exp.id));
-        // onSnapshot auto-updates
-      } catch(err){
-        alert('刪除失敗：' + err.message);
-        setSyncStatus('error');
-      }
+      try{ await deleteDoc(doc(db,'groups',groupId,'expenses',exp.id)); }
+      catch(err){ alert('刪除失敗：'+err.message); setSyncStatus('error'); }
     });
-
-    item.appendChild(summary);
-    item.appendChild(detail);
-    container.appendChild(item);
+    item.appendChild(summary); item.appendChild(detail); container.appendChild(item);
   });
 }
 
 // ════════════════════════════════════════════════════════
-// RENDER LEDGER  (computed entirely from expenses, never stored)
+// RENDER LEDGER
 // ════════════════════════════════════════════════════════
 function renderLedger(){
-  const pid    = document.getElementById('ledger-person').value;
-  const person = persons.find(p => p.id === pid);
+  const pid=$('ledger-person').value, person=persons.find(p=>p.id===pid);
   if(!person) return;
-
-  let totalPaid = 0, totalSplit = 0;
-  const rows = [];
-
-  expenses.forEach(exp => {
-    const paidByMe = exp.paidBy === pid;
-    const myShare  = (exp.splits || []).find(s => s.personId === pid);
-    if(!paidByMe && !myShare) return;
-
-    const paid  = paidByMe ? exp.total       : 0;
-    const split = myShare  ? myShare.amount  : 0;
-    totalPaid  += paid;
-    totalSplit += split;
-    const payer = persons.find(p => p.id === exp.paidBy);
-    rows.push({ exp, paid, split, net: paid - split, payerName: payer ? payer.name : '?' });
+  let totalPaid=0, totalSplit=0; const rows=[];
+  expenses.forEach(exp=>{
+    const paidByMe=exp.paidBy===pid, myShare=(exp.splits||[]).find(s=>s.personId===pid);
+    if(!paidByMe&&!myShare) return;
+    const paid=paidByMe?exp.total:0, split=myShare?myShare.amount:0;
+    totalPaid+=paid; totalSplit+=split;
+    const payer=persons.find(p=>p.id===exp.paidBy);
+    rows.push({exp,paid,split,net:paid-split,payerName:payer?payer.name:'?'});
   });
-
-  const balance = Math.round((totalPaid - totalSplit) * 100) / 100;
-  const sc      = balance > 0 ? 'positive' : balance < 0 ? 'negative' : 'zero';
-  const label   = balance > 0 ? '應收款'   : balance < 0 ? '應付款'   : '已平衡';
-  const bc      = balance > 0 ? 'badge-receive' : balance < 0 ? 'badge-pay' : 'badge-ok';
-
-  let html = `
+  const balance=Math.round((totalPaid-totalSplit)*100)/100;
+  const sc=balance>0?'positive':balance<0?'negative':'zero';
+  const label=balance>0?'應收款':balance<0?'應付款':'已平衡';
+  const bc=balance>0?'badge-receive':balance<0?'badge-pay':'badge-ok';
+  let html=`
     <div class="ledger-stats">
       <div class="stat-box"><div class="stat-label">已付總額</div><div class="stat-value">$${fmt(totalPaid)}</div></div>
       <div class="stat-box"><div class="stat-label">應分攤</div><div class="stat-value">$${fmt(totalSplit)}</div></div>
-      <div class="stat-box"><div class="stat-label">差額</div><div class="stat-value ${sc}">${balance >= 0 ? '+' : ''}$${fmt(balance)}</div></div>
+      <div class="stat-box"><div class="stat-label">差額</div><div class="stat-value ${sc}">${balance>=0?'+':''}$${fmt(balance)}</div></div>
     </div>
     <span class="ledger-badge ${bc}">${label}：$${fmt(Math.abs(balance))}</span>
-    <div class="ledger-breakdown">
-      <h4>逐筆明細（差額 = 已付 − 應分攤）</h4>`;
-
-  if(rows.length === 0){
-    html += `<div style="color:var(--ink2);font-size:13px;padding:8px 0;">此角色尚無任何支出紀錄</div>`;
+    <div class="ledger-breakdown"><h4>逐筆明細（差額 = 已付 − 應分攤）</h4>`;
+  if(rows.length===0){
+    html+=`<div style="color:var(--ink2);font-size:13px;padding:8px 0;">此角色尚無任何支出紀錄</div>`;
   } else {
-    rows.forEach(r => {
-      const sign    = r.net >= 0 ? '+' : '';
-      const pctNote = (r.exp.splitMethod === 'percent' && r.split > 0)
-                      ? ` (${(r.split / r.exp.total * 100).toFixed(1)}%)` : '';
-      html += `<div class="ledger-row">
+    rows.forEach(r=>{
+      const sign=r.net>=0?'+':'';
+      const pctNote=(r.exp.splitMethod==='percent'&&r.split>0)?` (${(r.split/r.exp.total*100).toFixed(1)}%)`:'';
+      html+=`<div class="ledger-row">
         <div class="ledger-row-left">
           <div class="ledger-row-title">${esc(r.exp.title)}</div>
-          <div class="ledger-row-meta">付款人：${esc(r.payerName)} · ${METHOD_LABELS[r.exp.splitMethod] || ''}</div>
+          <div class="ledger-row-meta">付款人：${esc(r.payerName)} · ${METHOD_LABELS[r.exp.splitMethod]||''}</div>
         </div>
         <div class="ledger-row-right">
-          ${r.paid  > 0 ? `<div class="impact-paid">+$${fmt(r.paid)}（已付）</div>` : ''}
-          ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)}（分攤）${esc(pctNote)}</div>` : ''}
+          ${r.paid>0?`<div class="impact-paid">+$${fmt(r.paid)}（已付）</div>`:''}
+          ${r.split>0?`<div class="impact-split">−$${fmt(r.split)}（分攤）${esc(pctNote)}</div>`:''}
           <div class="impact-net">小計 ${sign}$${fmt(r.net)}</div>
         </div>
       </div>`;
     });
   }
-  html += `</div>`;
-  document.getElementById('ledger-content').innerHTML = html;
+  html+=`</div>`;
+  $('ledger-content').innerHTML=html;
 }
-
 </script>
 </body>
 </html>
