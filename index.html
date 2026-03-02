@@ -745,7 +745,9 @@
 
     .form-row input[type=text],
     .form-row input[type=number],
-    .form-row select {
+    .form-row select,
+    .currency-row input,
+    .currency-row select {
       width: 100%;
       padding: 10px 14px;
       border: 1.5px solid var(--border);
@@ -759,7 +761,9 @@
     }
 
     .form-row input:focus,
-    .form-row select:focus {
+    .form-row select:focus,
+    .currency-row input:focus,
+    .currency-row select:focus {
       border-color: var(--accent);
     }
 
@@ -1565,7 +1569,7 @@
             <!-- 幣別 + 金額 -->
             <div class="currency-row">
               <div>
-                <div class="form-row-label" style="margin-bottom:7px;">幣別</div>
+                <div class="form-row-label">幣別</div>
                 <select id="exp-currency">
                   <option value="TWD">TWD 台幣</option>
                   <option value="USD">USD 美元</option>
@@ -1580,7 +1584,7 @@
                 </select>
               </div>
               <div>
-                <div class="form-row-label" style="margin-bottom:7px;">原始金額</div>
+                <div class="form-row-label">原始金額</div>
                 <input type="number" id="exp-original-amount" placeholder="0" min="0" step="any">
               </div>
             </div>
@@ -1725,14 +1729,14 @@
     // ┌──────────────────────────────────────────────────────┐
     // │  ★  請將下方換成您的 Firebase 專案設定              │
     // └──────────────────────────────────────────────────────┘
-const firebaseConfig = {
-  apiKey:            "AIzaSyA0KO5nb4gqVT_ltca2B_-EVGD4s5qqyCI",
-  authDomain:        "split-bill-9b60b.firebaseapp.com",
-  projectId:         "split-bill-9b60b",
-  storageBucket:     "split-bill-9b60b.firebasestorage.app",
-  messagingSenderId: "223183892907",
-  appId:             "1:223183892907:web:a271d3548d89630ec062ee"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0KO5nb4gqVT_ltca2B_-EVGD4s5qqyCI",
+      authDomain: "split-bill-9b60b.firebaseapp.com",
+      projectId: "split-bill-9b60b",
+      storageBucket: "split-bill-9b60b.firebasestorage.app",
+      messagingSenderId: "223183892907",
+      appId: "1:223183892907:web:a271d3548d89630ec062ee"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -1827,6 +1831,16 @@ const firebaseConfig = {
       const cur = $('exp-currency').value;
       if (cur === 'TWD') return parseFloat($('exp-amount-twd').value) || 0;
       return parseFloat($('exp-amount').value) || 0;
+    }
+
+    function getCurrentCurrency() {
+      return $('exp-currency').value;
+    }
+
+    function getCurrentOriginalAmount() {
+      const cur = getCurrentCurrency();
+      if (cur === 'TWD') return parseFloat($('exp-amount-twd').value) || 0;
+      return parseFloat($('exp-original-amount').value) || 0;
     }
 
     // ════════════════════════════════════════════════════════
@@ -2122,27 +2136,29 @@ const firebaseConfig = {
 
     function buildPayerInputs() {
       const c = $('payer-inputs'); c.innerHTML = '';
+      const cur = getCurrentCurrency();
       persons.forEach(p => {
         const row = document.createElement('div'); row.className = 'payer-amount-row';
         const ns = document.createElement('span'); ns.className = 'name-tag'; ns.textContent = p.name;
         const inp = document.createElement('input'); inp.type = 'number'; inp.dataset.pid = p.id;
         inp.min = '0'; inp.step = 'any'; inp.placeholder = '0';
         inp.addEventListener('input', updatePayerHint);
-        const ul = document.createElement('span'); ul.className = 'unit-label'; ul.textContent = 'TWD';
+        const ul = document.createElement('span'); ul.className = 'unit-label'; ul.textContent = cur;
         row.appendChild(ns); row.appendChild(inp); row.appendChild(ul);
         c.appendChild(row);
       });
     }
 
     function updatePayerHint() {
-      const total = getCurrentTWDAmount();
+      const total = getCurrentOriginalAmount();
+      const cur = getCurrentCurrency();
       const sum = Array.from(document.querySelectorAll('#payer-inputs input[data-pid]'))
         .reduce((acc, i) => acc + (parseFloat(i.value) || 0), 0);
       const hint = $('payer-hint');
       if (!total && !sum) { hint.textContent = ''; hint.className = 'payer-hint'; return; }
       const diff = Math.round((total - sum) * 100) / 100;
-      if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 $${fmt(sum)} TWD，與總額相符`; hint.className = 'payer-hint ok'; }
-      else { hint.textContent = `付款合計 $${fmt(sum)} / 總額 $${fmt(total)} TWD，差額 $${fmt(diff)}`; hint.className = 'payer-hint bad'; }
+      if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}，與總額相符`; hint.className = 'payer-hint ok'; }
+      else { hint.textContent = `付款合計 ${fmt(sum)} / 總額 ${fmt(total)} ${cur}，差額 ${fmt(diff)}`; hint.className = 'payer-hint bad'; }
     }
 
     // ── Splitter chips ────────────────────────────────────
@@ -2166,7 +2182,7 @@ const firebaseConfig = {
     function refreshCustomInputs() { if ($('split-method').value !== 'equal') rebuildCustomInputs(); }
 
     function rebuildCustomInputs() {
-      const ids = getActiveIds(), method = $('split-method').value, amount = getCurrentTWDAmount();
+      const ids = getActiveIds(), method = $('split-method').value, amount = getCurrentOriginalAmount(), cur = getCurrentCurrency();
       const c = $('custom-inputs'); c.innerHTML = '';
       if (!ids.length) { updateCustomHint(); return; }
       ids.forEach(pid => {
@@ -2177,7 +2193,7 @@ const firebaseConfig = {
         const inp = document.createElement('input'); inp.type = 'number'; inp.dataset.pid = pid; inp.min = '0'; inp.step = 'any';
         inp.placeholder = method === 'percent' ? '%' : '金額'; inp.value = defVal;
         inp.addEventListener('input', updateCustomHint);
-        const ul = document.createElement('span'); ul.className = 'unit-label'; ul.textContent = method === 'percent' ? '%' : 'TWD';
+        const ul = document.createElement('span'); ul.className = 'unit-label'; ul.textContent = method === 'percent' ? '%' : cur;
         row.appendChild(ns); row.appendChild(inp); row.appendChild(ul); c.appendChild(row);
       });
       updateCustomHint();
@@ -2185,13 +2201,13 @@ const firebaseConfig = {
 
     function updateCustomHint() {
       const method = $('split-method').value; if (method === 'equal') return;
-      const hint = $('custom-hint'), amount = getCurrentTWDAmount();
+      const hint = $('custom-hint'), amount = getCurrentOriginalAmount(), cur = getCurrentCurrency();
       const sum = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]')).reduce((acc, i) => acc + (parseFloat(i.value) || 0), 0);
       if (method === 'custom') {
         if (!sum && !amount) { hint.textContent = ''; hint.className = 'custom-hint'; return; }
         const diff = Math.round((amount - sum) * 100) / 100;
-        if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 $${fmt(sum)} TWD`; hint.className = 'custom-hint ok'; }
-        else { hint.textContent = `合計 $${fmt(sum)} / 總額 $${fmt(amount)} TWD，差 $${fmt(diff)}`; hint.className = 'custom-hint bad'; }
+        if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}`; hint.className = 'custom-hint ok'; }
+        else { hint.textContent = `合計 ${fmt(sum)} / 總額 ${fmt(amount)} ${cur}，差 ${fmt(diff)}`; hint.className = 'custom-hint bad'; }
       } else {
         const diff = Math.round((100 - sum) * 10) / 10;
         if (Math.abs(diff) < 0.1) { hint.textContent = `✓ 合計 ${sum.toFixed(1)}%`; hint.className = 'custom-hint ok'; }
@@ -2219,12 +2235,24 @@ const firebaseConfig = {
 
       // Payers
       let payers;
+      const toTWD = (v) => Math.round(v * rate * 100) / 100;
+      const origTotal = getCurrentOriginalAmount();
+
       if (isMultiPayer) {
         const payerInps = Array.from(document.querySelectorAll('#payer-inputs input[data-pid]'));
-        payers = payerInps.map(i => ({ personId: i.dataset.pid, amount: Math.round((parseFloat(i.value) || 0) * 100) / 100 })).filter(p => p.amount > 0);
-        if (!payers.length) { showErr(errEl, '請輸入至少一位付款人金額'); return; }
-        const paySum = payers.reduce((a, p) => a + p.amount, 0);
-        if (Math.abs(paySum - amount) > 0.01) { showErr(errEl, `付款合計 $${fmt(paySum)} 與總額 $${fmt(amount)} TWD 不符`); return; }
+        const pUSDs = payerInps.map(i => ({ personId: i.dataset.pid, amount: parseFloat(i.value) || 0 })).filter(p => p.amount > 0);
+        if (!pUSDs.length) { showErr(errEl, '請輸入至少一位付款人金額'); return; }
+        const pSum = pUSDs.reduce((a, p) => a + p.amount, 0);
+        if (Math.abs(pSum - origTotal) > 0.01) { showErr(errEl, `付款合計 ${fmt(pSum)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
+
+        // Convert to TWD and handle remainder
+        let assignedTWD = 0;
+        payers = pUSDs.map((p, i) => {
+          let t;
+          if (i === pUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
+          else { t = toTWD(p.amount); assignedTWD += t; }
+          return { personId: p.personId, amount: t };
+        });
       } else {
         payers = [{ personId: $('exp-payer').value, amount }];
       }
@@ -2237,22 +2265,31 @@ const firebaseConfig = {
         splits = ids.map((pid, i) => ({ personId: pid, amount: i === ids.length - 1 ? last : each }));
       } else if (method === 'custom') {
         const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-        let sum = 0;
+        let sumUSD = 0;
+        const sUSDs = [];
         for (const inp of inps) {
           const v = parseFloat(inp.value) || 0;
           if (v < 0) { showErr(errEl, '分攤金額不可為負數'); return; }
-          sum += v; splits.push({ personId: inp.dataset.pid, amount: Math.round(v * 100) / 100 });
+          sumUSD += v; sUSDs.push({ personId: inp.dataset.pid, usd: v });
         }
-        if (Math.abs(sum - amount) > 0.01) { showErr(errEl, `自訂金額合計 $${fmt(sum)} 與總額 $${fmt(amount)} TWD 不符`); return; }
+        if (Math.abs(sumUSD - origTotal) > 0.01) { showErr(errEl, `自訂金額合計 ${fmt(sumUSD)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
+
+        let assignedTWD = 0;
+        splits = sUSDs.map((s, i) => {
+          let t;
+          if (i === sUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
+          else { t = toTWD(s.usd); assignedTWD += t; }
+          return { personId: s.personId, amount: t };
+        });
       } else {
         const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
         let pctSum = 0;
         const pcts = inps.map(inp => { const v = parseFloat(inp.value) || 0; pctSum += v; return { pid: inp.dataset.pid, pct: v }; });
         if (Math.abs(pctSum - 100) > 0.1) { showErr(errEl, `比例合計 ${pctSum.toFixed(1)}%，需等於 100%`); return; }
-        let assigned = 0;
+        let assignedSplitTWD = 0;
         splits = pcts.map((item, i) => {
-          let amt = i === pcts.length - 1 ? Math.round((amount - assigned) * 100) / 100 : Math.round((amount * item.pct / 100) * 100) / 100;
-          if (i < pcts.length - 1) assigned += amt;
+          let amt = i === pcts.length - 1 ? Math.round((amount - assignedSplitTWD) * 100) / 100 : Math.round((amount * item.pct / 100) * 100) / 100;
+          if (i < pcts.length - 1) assignedSplitTWD += amt;
           return { personId: item.pid, amount: amt };
         });
       }
