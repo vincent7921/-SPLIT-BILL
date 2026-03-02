@@ -1151,6 +1151,11 @@
       background: #f8d0c8;
     }
 
+    /* 按鈕換行後的間距優化 */
+    .expense-right button {
+      margin: 2px 0;
+    }
+
     .empty-state {
       padding: 32px 20px;
       text-align: center;
@@ -1899,6 +1904,11 @@
       $('form-title').textContent = '修改支出資料';
       $('submit-btn').textContent = '更新紀錄';
       $('cancel-edit-btn').style.display = 'block';
+
+      // 強制展開面板
+      $('body-add').classList.remove('collapsed');
+      $('chv-add').classList.add('open');
+
       $('card-add').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       // Basic Info
@@ -2516,7 +2526,7 @@
         editBtn.textContent = '編輯';
         editBtn.addEventListener('click', e => {
           e.stopPropagation();
-          startEdit(exp.id);
+          window.startEdit(exp.id);
         });
         right.appendChild(editBtn);
 
@@ -2625,9 +2635,6 @@
         ${r.paid > 0 ? `<div class="impact-paid">+$${fmt(r.paid)} TWD（已付）</div>` : ''}
         ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)} TWD（分攤）${esc(pctNote)}</div>` : ''}
         <div class="impact-net">小計 ${sign}$${fmt(r.net)} TWD</div>
-        <div style="margin-top:5px;">
-          <button class="btn-edit" onclick="window.startEdit('${r.exp.id}')">編輯</button>
-        </div>
       </div>
     </div>`;
       };
