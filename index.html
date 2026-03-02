@@ -1027,8 +1027,27 @@
       text-align: right;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: flex-end;
+      gap: 6px;
       flex-shrink: 0;
+      flex-wrap: wrap;
+      /* 允許按鈕過多時換行 */
+      max-width: 60%;
+      /* 限制按鈕區寬度，避免擠壓標題 */
+    }
+
+    @media (max-width: 480px) {
+      .expense-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .expense-right {
+        max-width: 100%;
+        width: 100%;
+        justify-content: flex-start;
+      }
     }
 
     .expense-amount {
@@ -1936,6 +1955,10 @@
       }
     }
 
+    // 將編輯功能掛載到 window，解決 type="module" 下 inline onclick 失效問題
+    window.startEdit = startEdit;
+    window.cancelEdit = cancelEdit;
+
     function cancelEdit() {
       editingExpenseId = null;
       $('form-title').textContent = '新增支出';
@@ -2602,7 +2625,9 @@
         ${r.paid > 0 ? `<div class="impact-paid">+$${fmt(r.paid)} TWD（已付）</div>` : ''}
         ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)} TWD（分攤）${esc(pctNote)}</div>` : ''}
         <div class="impact-net">小計 ${sign}$${fmt(r.net)} TWD</div>
-        <div style="margin-top:5px;"><button class="btn-edit" onclick="startEdit('${r.exp.id}')">編輯</button></div>
+        <div style="margin-top:5px;">
+          <button class="btn-edit" onclick="window.startEdit('${r.exp.id}')">編輯</button>
+        </div>
       </div>
     </div>`;
       };
