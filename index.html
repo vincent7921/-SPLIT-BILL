@@ -2483,9 +2483,19 @@
           const badge = document.createElement('span'); badge.className = 'cleared-badge'; badge.textContent = '✓ 已結清';
           right.appendChild(badge);
         }
-        const amtSpan = document.createElement('span'); amtSpan.className = 'expense-amount';
+        const amtSpan = document.createElement('span');
+        amtSpan.className = 'expense-amount';
         amtSpan.textContent = `$${fmt(exp.total)} TWD`;
         right.appendChild(amtSpan);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-edit';
+        editBtn.textContent = '編輯';
+        editBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          startEdit(exp.id);
+        });
+        right.appendChild(editBtn);
 
         const clearBtn = document.createElement('button');
         clearBtn.className = 'btn-clear ' + (isCleared ? 'cleared' : 'uncleared');
@@ -2537,7 +2547,7 @@
         detail.innerHTML = detailHTML;
 
         summary.addEventListener('click', e => {
-          if (e.target.classList.contains('btn-delete') || e.target.classList.contains('btn-clear')) return;
+          if (e.target.classList.contains('btn-delete') || e.target.classList.contains('btn-clear') || e.target.classList.contains('btn-edit')) return;
           detail.classList.toggle('open');
           expandIcon.classList.toggle('open', detail.classList.contains('open'));
         });
@@ -2592,6 +2602,7 @@
         ${r.paid > 0 ? `<div class="impact-paid">+$${fmt(r.paid)} TWD（已付）</div>` : ''}
         ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)} TWD（分攤）${esc(pctNote)}</div>` : ''}
         <div class="impact-net">小計 ${sign}$${fmt(r.net)} TWD</div>
+        <div style="margin-top:5px;"><button class="btn-edit" onclick="startEdit('${r.exp.id}')">編輯</button></div>
       </div>
     </div>`;
       };
