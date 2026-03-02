@@ -839,9 +839,9 @@
 
     .custom-amount-row input {
       flex: 1;
-      padding: 8px 10px;
+      padding: 10px 14px;
       border: 1.5px solid var(--border);
-      border-radius: 8px;
+      border-radius: 9px;
       background: var(--bg);
       font-family: inherit;
       font-size: 14px;
@@ -952,9 +952,9 @@
 
     .payer-amount-row input {
       flex: 1;
-      padding: 8px 10px;
+      padding: 10px 14px;
       border: 1.5px solid var(--border);
-      border-radius: 8px;
+      border-radius: 9px;
       background: var(--bg);
       font-family: inherit;
       font-size: 14px;
@@ -1108,6 +1108,24 @@
       font-family: inherit;
       transition: background .15s;
       flex-shrink: 0;
+    }
+
+    .btn-edit {
+      padding: 4px 10px;
+      font-size: 12px;
+      background: var(--bg);
+      color: var(--ink2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+
+    .btn-edit:hover {
+      background: var(--border);
+      color: var(--ink);
     }
 
     .btn-delete:hover {
@@ -1810,10 +1828,19 @@
       $('rate-row').style.display = isTWD ? 'none' : 'block';
       $('twd-row').style.display = isTWD ? 'none' : 'block';
       $('twd-direct-row').style.display = isTWD ? 'block' : 'none';
+
+      // 即時更新畫面上所有單位的標籤
+      document.querySelectorAll('#payer-inputs .unit-label').forEach(el => el.textContent = cur);
+      document.querySelectorAll('#custom-inputs .unit-label').forEach(el => {
+        if ($('split-method').value !== 'percent') el.textContent = cur;
+      });
+
       if (!isTWD) {
         fetchRate(cur).then(rate => {
           if (rate) { $('exp-rate').value = fmtFx(rate); recalcTWD(); }
         });
+      } else {
+        recalcTWD();
       }
     }
 
@@ -1841,6 +1868,96 @@
       const cur = getCurrentCurrency();
       if (cur === 'TWD') return parseFloat($('exp-amount-twd').value) || 0;
       return parseFloat($('exp-original-amount').value) || 0;
+    }
+
+    // ── Edit Logic ───────────────────────────────────────
+    function startEdit(id) {
+      const exp = expenses.find(e => e.id === id);
+      if (!exp) return;
+      editingExpenseId = id;
+
+      // UI Updates
+      $('form-title').textContent = '修改支出資料';
+      $('submit-btn').textContent = '更新紀錄';
+      $('cancel-edit-btn').style.display = 'block';
+      $('card-add').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Basic Info
+      $('exp-title').value = exp.title;
+      $('exp-currency').value = exp.currency || 'TWD';
+
+      const isFX = exp.currency && exp.currency !== 'TWD';
+      if (isFX) {
+        $('exp-original-amount').value = exp.originalAmount || 0;
+        $('exp-rate').value = exp.exchangeRate || 1;
+        $('exp-amount').value = exp.total;
+      } else {
+        $('exp-amount-twd').value = exp.total;
+      }
+      onCurrencyChange(); // Refresh rows visibility
+
+      // Payer Info
+      const payers = getPayers(exp);
+      if (payers.length > 1) {
+        setMultiPayer(true);
+        persons.forEach(p => {
+          const pi = document.querySelector(`#payer-inputs input[data-pid="${p.id}"]`);
+          const match = payers.find(x => x.personId === p.id);
+          if (pi) pi.value = match ? match.amount : '';
+        });
+      } else {
+        setMultiPayer(false);
+        $('exp-payer').value = payers[0].personId;
+      }
+      updatePayerHint();
+
+      // Split Info
+      $('split-method').value = exp.splitMethod;
+      const ids = (exp.splits || []).map(s => s.personId);
+      document.querySelectorAll('#splitter-chips .chip').forEach(c => {
+        c.classList.toggle('active', ids.includes(c.dataset.pid));
+      });
+
+      onSplitMethodChange(); // Show/hide custom box
+
+      if (exp.splitMethod !== 'equal') {
+        rebuildCustomInputs(); // This also triggers custom inputs creation
+        exp.splits.forEach(s => {
+          const ci = document.querySelector(`#custom-inputs input[data-pid="${s.personId}"]`);
+          if (ci) {
+            if (exp.splitMethod === 'percent') {
+              ci.value = (s.amount / exp.total * 100).toFixed(1);
+            } else {
+              ci.value = s.amount;
+            }
+          }
+        });
+        updateCustomHint();
+      }
+    }
+
+    function cancelEdit() {
+      editingExpenseId = null;
+      $('form-title').textContent = '新增支出';
+      $('submit-btn').textContent = '記錄支出';
+      $('cancel-edit-btn').style.display = 'none';
+
+      // Reset form
+      $('exp-title').value = '';
+      $('exp-original-amount').value = '';
+      $('exp-amount').value = '';
+      $('exp-amount-twd').value = '';
+      $('exp-currency').value = 'TWD';
+      onCurrencyChange();
+      $('split-method').value = 'equal';
+      $('custom-amounts').style.display = 'none';
+      $('custom-inputs').innerHTML = '';
+      $('custom-hint').textContent = '';
+      if (isMultiPayer) {
+        document.querySelectorAll('#payer-inputs input').forEach(i => i.value = '');
+        $('payer-hint').textContent = '';
+      }
+      selectAllSplitters();
     }
 
     // ════════════════════════════════════════════════════════
@@ -2342,6 +2459,8 @@
           ? payerNames[0] + ' 付款'
           : payerNames.join('、') + ' 共同付款';
 
+        const activeSplits = splits.filter(s => s.amount > 0);
+
         const item = document.createElement('div');
         item.className = 'expense-item' + (isCleared ? ' is-cleared' : '');
 
@@ -2350,7 +2469,7 @@
         const left = document.createElement('div'); left.style.minWidth = '0';
         const titleRow = document.createElement('div'); titleRow.className = 'expense-title'; titleRow.textContent = exp.title;
         const metaRow = document.createElement('div'); metaRow.className = 'expense-meta';
-        metaRow.innerHTML = `${esc(payerStr)} · ${splits.length} 人 <span class="method-badge">${mLabel}</span>`;
+        metaRow.innerHTML = `${esc(payerStr)} · ${activeSplits.length} 人 <span class="method-badge">${mLabel}</span>`;
         left.appendChild(titleRow); left.appendChild(metaRow);
 
         const right = document.createElement('div'); right.className = 'expense-right';
@@ -2410,7 +2529,7 @@
         } else {
           detailHTML += `<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;">分攤明細（${mLabel}）${isCleared ? '<span style="color:var(--green);margin-left:6px;font-weight:600;">・已結清，不計入帳</span>' : ''}</div>`;
         }
-        splits.forEach(s => {
+        activeSplits.forEach(s => {
           const person = persons.find(p => p.id === s.personId);
           const extra = exp.splitMethod === 'percent' ? ` <span style="color:var(--ink2);font-size:11px;">(${(s.amount / exp.total * 100).toFixed(1)}%)</span>` : '';
           detailHTML += `<div class="split-row"><span>${esc(person ? person.name : '?')}</span><span><strong>$${fmt(s.amount)} TWD</strong>${extra}</span></div>`;
@@ -2440,9 +2559,9 @@
         const payers = getPayers(exp);
         const myPay = payers.find(p => p.personId === pid);
         const myShare = (exp.splits || []).find(s => s.personId === pid);
-        if (!myPay && !myShare) return;
         const paid = myPay ? myPay.amount : 0;
         const split = myShare ? myShare.amount : 0;
+        if (paid <= 0 && split <= 0) return;
         const allPayerPersons = payers.map(p => { const x = persons.find(q => q.id === p.personId); return x ? x.name : '?'; });
         const isFX = exp.currency && exp.currency !== 'TWD';
         const row = {
