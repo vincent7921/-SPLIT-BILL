@@ -1929,6 +1929,7 @@
       const payers = getPayers(exp);
       if (payers.length > 1) {
         setMultiPayer(true);
+        buildPayerInputs(); // 確保輸入框已建立
         persons.forEach(p => {
           const pi = document.querySelector(`#payer-inputs input[data-pid="${p.id}"]`);
           const match = payers.find(x => x.personId === p.id);
@@ -1936,26 +1937,29 @@
         });
       } else {
         setMultiPayer(false);
-        $('exp-payer').value = payers[0].personId;
+        $('exp-payer').value = payers[0]?.personId || '';
       }
       updatePayerHint();
 
       // Split Info
       $('split-method').value = exp.splitMethod;
-      const ids = (exp.splits || []).map(s => s.personId);
+      const splitIds = (exp.splits || []).map(s => s.personId);
       document.querySelectorAll('#splitter-chips .chip').forEach(c => {
-        c.classList.toggle('active', ids.includes(c.dataset.pid));
+        c.classList.toggle('active', splitIds.includes(c.dataset.pid));
       });
 
-      onSplitMethodChange(); // Show/hide custom box
+      onSplitMethodChange(); // 顯示/隱藏自訂區塊
 
       if (exp.splitMethod !== 'equal') {
-        rebuildCustomInputs(); // This also triggers custom inputs creation
+        rebuildCustomInputs(); // 重建輸入框
+        // 重新填入儲存的金額/比例，避免被 rebuild 的預設值蓋掉
         exp.splits.forEach(s => {
           const ci = document.querySelector(`#custom-inputs input[data-pid="${s.personId}"]`);
           if (ci) {
             if (exp.splitMethod === 'percent') {
-              ci.value = (s.amount / exp.total * 100).toFixed(1);
+              // 重新計算百分比
+              const p = (s.amount / exp.total * 100);
+              ci.value = p % 1 === 0 ? p : p.toFixed(1);
             } else {
               ci.value = s.amount;
             }
