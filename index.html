@@ -1461,6 +1461,45 @@
       color: var(--ink2);
       text-align: right;
     }
+
+    /* 總額標籤樣式 */
+    .total-sum-badge {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 14px;
+      color: var(--accent);
+      background: #fce8e4;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+
+    /* 手機版按鈕收納區樣式 */
+    .expense-actions-mobile {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 480px) {
+      .expense-right .btn-edit, .expense-right .btn-clear, .expense-right .btn-delete {
+        display: none;
+      }
+      .expense-actions-mobile {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .total-sum-badge {
+        display: block;
+        margin-left: 0;
+        margin-top: 4px;
+        width: fit-content;
+      }
+    }
   </style>
 </head>
 
@@ -1715,7 +1754,7 @@
         <div class="card" id="card-list">
           <div class="card-header" id="hdr-list">
             <div class="card-header-left">
-              <h3><span class="section-icon">📋</span>總帳本</h3>
+              <h3><span class="section-icon">📋</span>總帳本<span id="total-sum-all" class="total-sum-badge"></span></h3>
             </div>
             <div class="card-header-right">
               <span class="card-meta" id="expense-count"></span>
@@ -1914,6 +1953,12 @@
       $('body-add').classList.remove('collapsed');
       $('chv-add').classList.add('open');
       $('card-add').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // ── Step 0: 先重置所有金額欄位，避免舊資料殘留 ──
+      $('exp-original-amount').value = '';
+      $('exp-rate').value = '';
+      $('exp-amount').value = '';
+      $('exp-amount-twd').value = '';
 
       // ── Step 1: 幣別與金額回填（使用儲存的匯率，不重新從網路抓取）──
       const isFX = exp.currency && exp.currency !== 'TWD';
@@ -2485,6 +2530,8 @@
           cancelEdit();
         } else {
           await addDoc(collection(db, 'groups', groupId, 'expenses'), { ...expData, createdAt: serverTimestamp(), cleared: false });
+          // 新增成功後清空表單
+          cancelEdit();
         }
       } catch (e) { showErr(errEl, '儲存失敗：' + e.message); setSyncStatus('error'); }
       finally { btn.disabled = false; btn.textContent = editingExpenseId ? '更新紀錄' : '記錄支出'; }
@@ -2496,8 +2543,13 @@
     function renderExpenseList() {
       const container = $('expense-list'), countEl = $('expense-count');
       const activeCount = expenses.filter(e => !e.cleared).length;
+
+      // 計算所有項目的加總
+      let totalAmountAll = expenses.reduce((acc, e) => acc + e.total, 0);
+      $('total-sum-all').textContent = expenses.length ? `總合計：$${fmt(totalAmountAll)}` : '';
+
       countEl.textContent = expenses.length ? `共 ${expenses.length} 筆，未結清 ${activeCount} 筆` : '';
-      if (!expenses.length) { container.innerHTML = `<div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>`; return; }
+      if (!expenses.length) { container.innerHTML = `<div class="empty-state"><div class="icon">🧾</div>尚無支出記錄</div>`; $('total-sum-all').textContent = ''; return; }
       container.innerHTML = '';
 
       expenses.slice().reverse().forEach(exp => {
@@ -2611,7 +2663,28 @@
           const extra = exp.splitMethod === 'percent' ? ` <span style="color:var(--ink2);font-size:11px;">(${(s.amount / exp.total * 100).toFixed(1)}%)</span>` : '';
           detailHTML += `<div class="split-row"><span>${esc(person ? person.name : '?')}</span><span><strong>$${fmt(s.amount)} TWD</strong>${getFXVal(s.amount)}${extra}</span></div>`;
         });
+        // 手機版按鈕區
+        const actionBox = document.createElement('div');
+        actionBox.className = 'expense-actions-mobile';
+
+        const mEdit = editBtn.cloneNode(true);
+        mEdit.style.display = 'block';
+        mEdit.addEventListener('click', e => { e.stopPropagation(); window.startEdit(exp.id); });
+
+        const mClear = clearBtn.cloneNode(true);
+        mClear.style.display = 'block';
+        mClear.addEventListener('click', e => { e.stopPropagation(); clearBtn.click(); });
+
+        const mDel = delBtn.cloneNode(true);
+        mDel.style.display = 'block';
+        mDel.addEventListener('click', e => { e.stopPropagation(); delBtn.click(); });
+
+        actionBox.appendChild(mEdit);
+        actionBox.appendChild(mClear);
+        actionBox.appendChild(mDel);
+
         detail.innerHTML = detailHTML;
+        detail.appendChild(actionBox);
 
         summary.addEventListener('click', e => {
           if (e.target.classList.contains('btn-delete') || e.target.classList.contains('btn-clear') || e.target.classList.contains('btn-edit')) return;
