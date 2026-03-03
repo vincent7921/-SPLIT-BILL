@@ -1997,7 +1997,7 @@
 
       // ── Step 2: 付款人回填 ──
       const payers = getPayers(exp);
-      if (payers.length > 1 || (exp.payers && exp.payers.length > 0)) {
+      if (payers.length > 1) {
         setMultiPayer(true);
         // 先設定好哪些人有勾選
         const paidIds = payers.filter(p => p.amount > 0).map(p => p.personId);
@@ -2434,7 +2434,15 @@
       const hint = $('payer-hint');
       if (!total && !sum) { hint.textContent = ''; hint.className = 'payer-hint'; return; }
       const diff = Math.round((total - sum) * 100) / 100;
-      if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}，與總額相符`; hint.className = 'payer-hint ok'; }
+      if (Math.abs(diff) < 0.01) {
+        hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}，與總額相符`;
+        hint.className = 'payer-hint ok';
+        // 即時清理全域錯誤訊息
+        const errEl = $('form-error');
+        if (errEl.style.display !== 'none' && (errEl.textContent.includes('付款合計') || errEl.textContent.includes('不符'))) {
+          hideErr(errEl);
+        }
+      }
       else { hint.textContent = `付款合計 ${fmt(sum)} / 總額 ${fmt(total)} ${cur}，差額 ${fmt(diff)}`; hint.className = 'payer-hint bad'; }
     }
 
@@ -2497,11 +2505,27 @@
       if (method === 'custom') {
         if (!sum && !amount) { hint.textContent = ''; hint.className = 'custom-hint'; return; }
         const diff = Math.round((amount - sum) * 100) / 100;
-        if (Math.abs(diff) < 0.01) { hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}`; hint.className = 'custom-hint ok'; }
+        if (Math.abs(diff) < 0.01) {
+          hint.textContent = `✓ 合計 ${fmt(sum)} ${cur}`;
+          hint.className = 'custom-hint ok';
+          // 即時清理全域錯誤訊息
+          const errEl = $('form-error');
+          if (errEl.style.display !== 'none' && (errEl.textContent.includes('自訂金額') || errEl.textContent.includes('不符'))) {
+            hideErr(errEl);
+          }
+        }
         else { hint.textContent = `合計 ${fmt(sum)} / 總額 ${fmt(amount)} ${cur}，差 ${fmt(diff)}`; hint.className = 'custom-hint bad'; }
       } else {
         const diff = Math.round((100 - sum) * 10) / 10;
-        if (Math.abs(diff) < 0.1) { hint.textContent = `✓ 合計 ${sum.toFixed(1)}%`; hint.className = 'custom-hint ok'; }
+        if (Math.abs(diff) < 0.1) {
+          hint.textContent = `✓ 合計 ${sum.toFixed(1)}%`;
+          hint.className = 'custom-hint ok';
+          // 即時清理全域錯誤訊息
+          const errEl = $('form-error');
+          if (errEl.style.display !== 'none' && (errEl.textContent.includes('比例合計') || errEl.textContent.includes('100%'))) {
+            hideErr(errEl);
+          }
+        }
         else { hint.textContent = `合計 ${sum.toFixed(1)}%，需達 100%（差 ${diff.toFixed(1)}%）`; hint.className = 'custom-hint bad'; }
       }
     }
