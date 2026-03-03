@@ -1486,13 +1486,18 @@
     }
 
     @media (max-width: 480px) {
-      .expense-right .btn-edit, .expense-right .btn-clear, .expense-right .btn-delete {
+
+      .expense-right .btn-edit,
+      .expense-right .btn-clear,
+      .expense-right .btn-delete {
         display: none;
       }
+
       .expense-actions-mobile {
         display: flex;
         flex-wrap: wrap;
       }
+
       .total-sum-badge {
         display: block;
         margin-left: 0;
@@ -1708,6 +1713,7 @@
                   style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);">各人付款金額</span>
                 <button class="chip-link" id="btn-toggle-single-payer">切換單人付款</button>
               </div>
+              <div class="chip-group" id="payer-chips" style="margin-bottom:10px;"></div>
               <div id="payer-inputs"></div>
               <div class="payer-hint" id="payer-hint"></div>
             </div>
@@ -1945,6 +1951,7 @@
       editingExpenseId = id;
 
       // UI Updates
+      $('exp-title').value = exp.title || '';
       $('form-title').textContent = '修改支出資料';
       $('submit-btn').textContent = '更新紀錄';
       $('cancel-edit-btn').style.display = 'block';
@@ -1981,17 +1988,21 @@
         $('exp-amount-twd').value = exp.total;
       }
 
-      // ── Step 2: 付款人回填（外幣換回原始幣別金額）──
+      // ── Step 2: 付款人回填 ──
       const payers = getPayers(exp);
-      if (payers.length > 1) {
+      if (payers.length > 1 || (exp.payers && exp.payers.length > 0)) {
         setMultiPayer(true);
+        // 先設定好哪些人有勾選
+        const paidIds = payers.filter(p => p.amount > 0).map(p => p.personId);
+        document.querySelectorAll('#payer-chips .chip').forEach(c => {
+          c.classList.toggle('active', paidIds.includes(c.dataset.pid));
+        });
         buildPayerInputs();
         persons.forEach(p => {
           const pi = document.querySelector(`#payer-inputs input[data-pid="${p.id}"]`);
           const match = payers.find(x => x.personId === p.id);
           if (pi) {
             if (match && match.amount > 0) {
-              // 外幣：TWD 金額 ÷ 匯率 = 原始幣別金額
               pi.value = isFX ? (Math.round(match.amount / savedRate * 100) / 100) : match.amount;
             } else {
               pi.value = '';
@@ -2320,6 +2331,7 @@
     function buildFormControls() {
       $('exp-payer').innerHTML = persons.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
       buildSplitterChips();
+      buildPayerInputChips();
       buildPayerInputs();
       $('ledger-person').innerHTML = persons.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
 
@@ -2348,25 +2360,61 @@
     }
 
     // ── Multi-payer ───────────────────────────────────────
+    function buildPayerInputChips() {
+      const cg = $('payer-chips'); cg.innerHTML = '';
+      persons.forEach(p => {
+        const chip = document.createElement('button');
+        chip.type = 'button'; chip.className = 'chip'; chip.textContent = p.name; chip.dataset.pid = p.id;
+        chip.addEventListener('click', function () {
+          this.classList.toggle('active');
+          buildPayerInputs();
+        });
+        cg.appendChild(chip);
+      });
+    }
+
     function setMultiPayer(multi) {
       isMultiPayer = multi;
       $('single-payer-row').style.display = multi ? 'none' : 'block';
       $('multi-payer-section').style.display = multi ? 'block' : 'none';
-      if (multi) updatePayerHint();
+      if (multi) {
+        // 如果是剛切換，預設選中單人模式選的那個人
+        const currentId = $('exp-payer').value;
+        const chips = document.querySelectorAll('#payer-chips .chip');
+        const anyActive = Array.from(chips).some(c => c.classList.contains('active'));
+        if (!anyActive && currentId) {
+          chips.forEach(c => { if (c.dataset.pid === currentId) c.classList.add('active'); });
+        }
+        buildPayerInputs();
+        updatePayerHint();
+      }
     }
 
     function buildPayerInputs() {
-      const c = $('payer-inputs'); c.innerHTML = '';
+      const container = $('payer-inputs');
+      const activeIds = Array.from(document.querySelectorAll('#payer-chips .chip.active')).map(c => c.dataset.pid);
+
+      // 保留舊數值
+      const oldVals = {};
+      Array.from(container.querySelectorAll('input[data-pid]')).forEach(i => {
+        if (i.value) oldVals[i.dataset.pid] = i.value;
+      });
+
+      container.innerHTML = '';
       const cur = getCurrentCurrency();
-      persons.forEach(p => {
+
+      activeIds.forEach(pid => {
+        const person = persons.find(p => p.id === pid);
+        if (!person) return;
         const row = document.createElement('div'); row.className = 'payer-amount-row';
-        const ns = document.createElement('span'); ns.className = 'name-tag'; ns.textContent = p.name;
-        const inp = document.createElement('input'); inp.type = 'number'; inp.dataset.pid = p.id;
-        inp.min = '0'; inp.step = 'any'; inp.placeholder = '0';
+        const ns = document.createElement('span'); ns.className = 'name-tag'; ns.textContent = person.name;
+        const inp = document.createElement('input'); inp.type = 'number'; inp.dataset.pid = pid; inp.min = '0'; inp.step = 'any';
+        inp.placeholder = '0';
+        inp.value = oldVals[pid] || '';
         inp.addEventListener('input', updatePayerHint);
         const ul = document.createElement('span'); ul.className = 'unit-label'; ul.textContent = cur;
         row.appendChild(ns); row.appendChild(inp); row.appendChild(ul);
-        c.appendChild(row);
+        container.appendChild(row);
       });
     }
 
@@ -2398,7 +2446,21 @@
 
     function onSplitMethodChange() {
       const method = $('split-method').value, box = $('custom-amounts');
-      if (method === 'equal') { box.style.display = 'none'; } else { box.style.display = 'block'; rebuildCustomInputs(); }
+      if (method === 'equal') {
+        box.style.display = 'none';
+      } else {
+        box.style.display = 'block';
+        // 切換時如果沒人選中，提示使用者選人
+        const activeCount = getActiveIds().length;
+        if (activeCount === 0 || activeCount === persons.length) {
+          // 如果是全選狀態切換到自訂，通常使用者只想選幾個人，所以清除讓他們選
+          // 但為了 UX 方便，我們保留全選，除非人數真的很多
+          if (persons.length > 5 && activeCount === persons.length) {
+            clearAllSplitters();
+          }
+        }
+        rebuildCustomInputs();
+      }
     }
     function refreshCustomInputs() { if ($('split-method').value !== 'equal') rebuildCustomInputs(); }
 
