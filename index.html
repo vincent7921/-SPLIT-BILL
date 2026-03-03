@@ -2533,14 +2533,19 @@
         const right = document.createElement('div'); right.className = 'expense-right';
 
         if (isFX) {
-          const tag = document.createElement('span'); tag.className = 'expense-currency-tag';
-          tag.textContent = exp.currency;
-          right.appendChild(tag);
+          const fxAmt = document.createElement('span');
+          fxAmt.style.fontSize = '12px';
+          fxAmt.style.color = 'var(--ink2)';
+          fxAmt.style.marginRight = '4px';
+          fxAmt.textContent = `${sym}${fmt(exp.originalAmount)} ${exp.currency} →`;
+          right.appendChild(fxAmt);
         }
+
         if (isCleared) {
           const badge = document.createElement('span'); badge.className = 'cleared-badge'; badge.textContent = '✓ 已結清';
           right.appendChild(badge);
         }
+
         const amtSpan = document.createElement('span');
         amtSpan.className = 'expense-amount';
         amtSpan.textContent = `$${fmt(exp.total)} TWD`;
@@ -2649,6 +2654,12 @@
         const sign = r.net >= 0 ? '+' : '';
         const pctNote = (r.exp.splitMethod === 'percent' && r.split > 0) ? ` (${(r.split / r.exp.total * 100).toFixed(1)}%)` : '';
         const fxLine = r.isFX ? `<div class="ledger-fx-note">💱 ${CURRENCY_SYMBOLS[r.exp.currency] || ''}${fmt(r.exp.originalAmount)} ${r.exp.currency} × ${fmtFx(r.exp.exchangeRate)} = $${fmt(r.exp.total)} TWD</div>` : '';
+
+        // 個人份額的原幣估算
+        const pSym = CURRENCY_SYMBOLS[r.exp.currency] || '';
+        const paidFX = r.isFX ? `（${pSym}${fmt(Math.round(r.paid / r.exp.exchangeRate * 100) / 100)} ${r.exp.currency}）` : '';
+        const splitFX = r.isFX ? `（${pSym}${fmt(Math.round(r.split / r.exp.exchangeRate * 100) / 100)} ${r.exp.currency}）` : '';
+
         return `<div class="ledger-row${isCleared ? ' is-cleared' : ''}">
       <div class="ledger-row-left">
         <div class="ledger-row-title">${esc(r.exp.title)}</div>
@@ -2657,8 +2668,8 @@
         ${isCleared ? '<div class="ledger-cleared-note">✓ 已結清，不計入</div>' : ''}
       </div>
       <div class="ledger-row-right">
-        ${r.paid > 0 ? `<div class="impact-paid">+$${fmt(r.paid)} TWD（已付）</div>` : ''}
-        ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)} TWD（分攤）${esc(pctNote)}</div>` : ''}
+        ${r.paid > 0 ? `<div class="impact-paid">+$${fmt(r.paid)} TWD ${paidFX}</div>` : ''}
+        ${r.split > 0 ? `<div class="impact-split">−$${fmt(r.split)} TWD ${splitFX}${esc(pctNote)}</div>` : ''}
         <div class="impact-net">小計 ${sign}$${fmt(r.net)} TWD</div>
       </div>
     </div>`;
