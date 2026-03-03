@@ -1703,7 +1703,8 @@
             <div class="error-msg" id="form-error"></div>
             <div style="display:flex;gap:10px;margin-top:4px;">
               <button class="btn-submit" id="submit-btn">記錄支出</button>
-              <button class="btn-submit" id="cancel-edit-btn" onclick="window.cancelEdit()" style="display:none;background:var(--bg);color:var(--ink2);border:1.5px solid var(--border);">取消修改</button>
+              <button class="btn-submit" id="cancel-edit-btn" onclick="window.cancelEdit()"
+                style="display:none;background:var(--bg);color:var(--ink2);border:1.5px solid var(--border);">取消修改</button>
             </div>
           </div>
         </div>
@@ -1909,17 +1910,24 @@
       $('submit-btn').textContent = '更新紀錄';
       $('cancel-edit-btn').style.display = 'block';
 
-      // 強制展開面板
+      // 強制展開面板，確保使用者能看到表單
       $('body-add').classList.remove('collapsed');
       $('chv-add').classList.add('open');
-
       $('card-add').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      // Basic Info
-      $('exp-title').value = exp.title;
-      $('exp-currency').value = exp.currency || 'TWD';
-
+      // ── Step 1: 幣別與金額回填（使用儲存的匯率，不重新從網路抓取）──
       const isFX = exp.currency && exp.currency !== 'TWD';
+      const cur = exp.currency || 'TWD';
+      const savedRate = isFX ? (exp.exchangeRate || 1) : 1;
+      $('exp-currency').value = cur;
+
+      // 手動切換顯示/隱藏，不呼叫 onCurrencyChange() 以避免觸發 fetchRate
+      $('rate-row').style.display = isFX ? 'block' : 'none';
+      $('twd-row').style.display = isFX ? 'block' : 'none';
+      $('twd-direct-row').style.display = isFX ? 'none' : 'block';
+      document.querySelectorAll('#payer-inputs .unit-label').forEach(el => el.textContent = cur);
+      document.querySelectorAll('#custom-inputs .unit-label').forEach(el => el.textContent = cur);
+
       if (isFX) {
         $('exp-original-amount').value = exp.originalAmount || 0;
         $('exp-rate').value = exp.exchangeRate || 1;
@@ -1927,17 +1935,23 @@
       } else {
         $('exp-amount-twd').value = exp.total;
       }
-      onCurrencyChange(); // Refresh rows visibility
 
-      // Payer Info
+      // ── Step 2: 付款人回填（外幣換回原始幣別金額）──
       const payers = getPayers(exp);
       if (payers.length > 1) {
         setMultiPayer(true);
-        buildPayerInputs(); // 確保輸入框已建立
+        buildPayerInputs();
         persons.forEach(p => {
           const pi = document.querySelector(`#payer-inputs input[data-pid="${p.id}"]`);
           const match = payers.find(x => x.personId === p.id);
-          if (pi) pi.value = match ? match.amount : '';
+          if (pi) {
+            if (match && match.amount > 0) {
+              // 外幣：TWD 金額 ÷ 匯率 = 原始幣別金額
+              pi.value = isFX ? (Math.round(match.amount / savedRate * 100) / 100) : match.amount;
+            } else {
+              pi.value = '';
+            }
+          }
         });
       } else {
         setMultiPayer(false);
@@ -1945,27 +1959,31 @@
       }
       updatePayerHint();
 
-      // Split Info
+      // ── Step 3: 分攤方式與人選回填（不呼叫 onSplitMethodChange 以避免覆蓋資料）──
       $('split-method').value = exp.splitMethod;
-      const splitIds = (exp.splits || []).map(s => s.personId);
+      // 只選取有金額的人（排除金額為 0 的分攤）
+      const splitIds = (exp.splits || []).filter(s => s.amount > 0).map(s => s.personId);
       document.querySelectorAll('#splitter-chips .chip').forEach(c => {
         c.classList.toggle('active', splitIds.includes(c.dataset.pid));
       });
 
-      onSplitMethodChange(); // 顯示/隱藏自訂區塊
-
-      if (exp.splitMethod !== 'equal') {
-        rebuildCustomInputs(); // 重建輸入框
-        // 重新填入儲存的金額/比例，避免被 rebuild 的預設值蓋掉
+      const customBox = $('custom-amounts');
+      if (exp.splitMethod === 'equal') {
+        customBox.style.display = 'none';
+      } else {
+        customBox.style.display = 'block';
+        rebuildCustomInputs(); // 先建立空白輸入框
+        // 再填入實際儲存的值（覆蓋 rebuild 產生的預設平均值）
         exp.splits.forEach(s => {
+          if (s.amount <= 0) return;
           const ci = document.querySelector(`#custom-inputs input[data-pid="${s.personId}"]`);
           if (ci) {
             if (exp.splitMethod === 'percent') {
-              // 重新計算百分比
-              const p = (s.amount / exp.total * 100);
-              ci.value = p % 1 === 0 ? p : p.toFixed(1);
+              const pct = (s.amount / exp.total * 100);
+              ci.value = pct % 1 === 0 ? pct : pct.toFixed(1);
             } else {
-              ci.value = s.amount;
+              // 外幣自訂分攤：TWD ÷ 匯率 = 原始幣別金額
+              ci.value = isFX ? (Math.round(s.amount / savedRate * 100) / 100) : s.amount;
             }
           }
         });
@@ -1973,7 +1991,6 @@
       }
     }
 
-    // 將編輯功能掛載到 window，解決 type="module" 下 inline onclick 失效問題
     window.startEdit = startEdit;
     window.cancelEdit = cancelEdit;
     $('cancel-edit-btn').addEventListener('click', cancelEdit);
@@ -2457,21 +2474,20 @@
       try {
         const expData = {
           title, total: amount, payers, splits,
-          splitMethod: method, createdAt: serverTimestamp(),
+          splitMethod: method,
           // FX fields
           currency,
           ...(currency !== 'TWD' ? { originalAmount, exchangeRate: rate } : {})
         };
-        await addDoc(collection(db, 'groups', groupId, 'expenses'), expData);
-        // Reset form
-        $('exp-title').value = ''; $('exp-original-amount').value = ''; $('exp-amount').value = ''; $('exp-amount-twd').value = '';
-        $('exp-currency').value = 'TWD'; onCurrencyChange();
-        $('split-method').value = 'equal'; $('custom-amounts').style.display = 'none';
-        $('custom-inputs').innerHTML = ''; $('custom-hint').textContent = '';
-        if (isMultiPayer) { document.querySelectorAll('#payer-inputs input').forEach(i => i.value = ''); $('payer-hint').textContent = ''; }
-        hideErr(errEl); selectAllSplitters();
+
+        if (editingExpenseId) {
+          await updateDoc(doc(db, 'groups', groupId, 'expenses', editingExpenseId), expData);
+          cancelEdit();
+        } else {
+          await addDoc(collection(db, 'groups', groupId, 'expenses'), { ...expData, createdAt: serverTimestamp(), cleared: false });
+        }
       } catch (e) { showErr(errEl, '儲存失敗：' + e.message); setSyncStatus('error'); }
-      finally { btn.disabled = false; btn.textContent = '記錄支出'; }
+      finally { btn.disabled = false; btn.textContent = editingExpenseId ? '更新紀錄' : '記錄支出'; }
     }
 
     // ════════════════════════════════════════════════════════
