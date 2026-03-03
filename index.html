@@ -1703,7 +1703,7 @@
             <div class="error-msg" id="form-error"></div>
             <div style="display:flex;gap:10px;margin-top:4px;">
               <button class="btn-submit" id="submit-btn">記錄支出</button>
-              <button class="btn-submit" id="cancel-edit-btn" style="display:none;background:var(--bg);color:var(--ink2);border:1.5px solid var(--border);">取消修改</button>
+              <button class="btn-submit" id="cancel-edit-btn" onclick="window.cancelEdit()" style="display:none;background:var(--bg);color:var(--ink2);border:1.5px solid var(--border);">取消修改</button>
             </div>
           </div>
         </div>
@@ -1976,6 +1976,7 @@
     // 將編輯功能掛載到 window，解決 type="module" 下 inline onclick 失效問題
     window.startEdit = startEdit;
     window.cancelEdit = cancelEdit;
+    $('cancel-edit-btn').addEventListener('click', cancelEdit);
 
     function cancelEdit() {
       editingExpenseId = null;
