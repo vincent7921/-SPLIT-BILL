@@ -1847,6 +1847,12 @@
     const fmt = n => (Math.round(n * 100) / 100).toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     const fmtFx = n => (Math.round(n * 10000) / 10000).toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // 全域錯誤捕捉，幫助找出為何按鈕無反應
+    window.onerror = function (msg, url, line, col, error) {
+      alert(`系統錯誤：${msg}\n行號：${line}\n請截圖告知協助處理。`);
+      return false;
+    };
+
     const $ = id => document.getElementById(id);
     const showErr = (el, msg) => { el.textContent = msg; el.style.display = 'block'; };
     const hideErr = el => { el.style.display = 'none'; };
@@ -2368,6 +2374,7 @@
         chip.addEventListener('click', function () {
           this.classList.toggle('active');
           buildPayerInputs();
+          updatePayerHint(); // 確保切換時立即更新提示內容
         });
         cg.appendChild(chip);
       });
@@ -2416,6 +2423,7 @@
         row.appendChild(ns); row.appendChild(inp); row.appendChild(ul);
         container.appendChild(row);
       });
+      updatePayerHint(); // 建立完輸入框後立即執行一次計算與提示更新
     }
 
     function updatePayerHint() {
@@ -2502,88 +2510,89 @@
     // ADD EXPENSE
     // ════════════════════════════════════════════════════════
     async function addExpense() {
-      const title = $('exp-title').value.trim();
-      const currency = $('exp-currency').value;
-      const originalAmount = currency === 'TWD' ? 0 : (parseFloat($('exp-original-amount').value) || 0);
-      const rate = currency === 'TWD' ? 1 : (parseFloat($('exp-rate').value) || 0);
-      const amount = getCurrentTWDAmount();
-      const method = $('split-method').value, ids = getActiveIds();
+      console.log('開始記錄支出...');
+      const btn = $('submit-btn');
       const errEl = $('form-error'); hideErr(errEl);
 
-      if (!title) { showErr(errEl, '請輸入項目名稱'); return; }
-      if (!amount || amount <= 0) { showErr(errEl, '金額必須大於 0'); return; }
-      if (currency !== 'TWD' && (!originalAmount || originalAmount <= 0)) { showErr(errEl, '請輸入原始金額'); return; }
-      if (currency !== 'TWD' && (!rate || rate <= 0)) { showErr(errEl, '請輸入匯率'); return; }
-      if (!ids.length) { showErr(errEl, '請至少選擇一位分攤對象'); return; }
-
-      // Payers
-      let payers;
-      const toTWD = (v) => Math.round(v * rate * 100) / 100;
-      const origTotal = getCurrentOriginalAmount();
-
-      if (isMultiPayer) {
-        const payerInps = Array.from(document.querySelectorAll('#payer-inputs input[data-pid]'));
-        const pUSDs = payerInps.map(i => ({ personId: i.dataset.pid, amount: parseFloat(i.value) || 0 })).filter(p => p.amount > 0);
-        if (!pUSDs.length) { showErr(errEl, '請輸入至少一位付款人金額'); return; }
-        const pSum = pUSDs.reduce((a, p) => a + p.amount, 0);
-        if (Math.abs(pSum - origTotal) > 0.01) { showErr(errEl, `付款合計 ${fmt(pSum)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
-
-        // Convert to TWD and handle remainder
-        let assignedTWD = 0;
-        payers = pUSDs.map((p, i) => {
-          let t;
-          if (i === pUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
-          else { t = toTWD(p.amount); assignedTWD += t; }
-          return { personId: p.personId, amount: t };
-        });
-      } else {
-        payers = [{ personId: $('exp-payer').value, amount }];
-      }
-
-      // Splits
-      let splits = [];
-      if (method === 'equal') {
-        const each = Math.floor((amount / ids.length) * 100) / 100;
-        const last = Math.round((amount - each * (ids.length - 1)) * 100) / 100;
-        splits = ids.map((pid, i) => ({ personId: pid, amount: i === ids.length - 1 ? last : each }));
-      } else if (method === 'custom') {
-        const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-        let sumUSD = 0;
-        const sUSDs = [];
-        for (const inp of inps) {
-          const v = parseFloat(inp.value) || 0;
-          if (v < 0) { showErr(errEl, '分攤金額不可為負數'); return; }
-          sumUSD += v; sUSDs.push({ personId: inp.dataset.pid, usd: v });
-        }
-        if (Math.abs(sumUSD - origTotal) > 0.01) { showErr(errEl, `自訂金額合計 ${fmt(sumUSD)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
-
-        let assignedTWD = 0;
-        splits = sUSDs.map((s, i) => {
-          let t;
-          if (i === sUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
-          else { t = toTWD(s.usd); assignedTWD += t; }
-          return { personId: s.personId, amount: t };
-        });
-      } else {
-        const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
-        let pctSum = 0;
-        const pcts = inps.map(inp => { const v = parseFloat(inp.value) || 0; pctSum += v; return { pid: inp.dataset.pid, pct: v }; });
-        if (Math.abs(pctSum - 100) > 0.1) { showErr(errEl, `比例合計 ${pctSum.toFixed(1)}%，需等於 100%`); return; }
-        let assignedSplitTWD = 0;
-        splits = pcts.map((item, i) => {
-          let amt = i === pcts.length - 1 ? Math.round((amount - assignedSplitTWD) * 100) / 100 : Math.round((amount * item.pct / 100) * 100) / 100;
-          if (i < pcts.length - 1) assignedSplitTWD += amt;
-          return { personId: item.pid, amount: amt };
-        });
-      }
-
-      const btn = $('submit-btn'); btn.disabled = true; btn.textContent = '儲存中…'; setSyncStatus('saving');
       try {
+        const title = $('exp-title').value.trim();
+        const currency = $('exp-currency').value;
+        const originalAmount = getCurrentOriginalAmount();
+        const rate = currency === 'TWD' ? 1 : (parseFloat($('exp-rate').value) || 0);
+        const amount = getCurrentTWDAmount();
+        const method = $('split-method').value, ids = getActiveIds();
+
+        if (!title) { showErr(errEl, '請輸入項目名稱'); return; }
+        if (!amount || amount <= 0) { showErr(errEl, '金額必須大於 0'); return; }
+        if (currency !== 'TWD' && (!originalAmount || originalAmount <= 0)) { showErr(errEl, '請輸入原始金額'); return; }
+        if (currency !== 'TWD' && (!rate || rate <= 0)) { showErr(errEl, '請輸入匯率'); return; }
+        if (!ids.length) { showErr(errEl, '請至少選擇一位分攤對象'); return; }
+
+        // Payers
+        let payers;
+        const toTWD = (v) => Math.round(v * rate * 100) / 100;
+        const origTotal = getCurrentOriginalAmount();
+
+        if (isMultiPayer) {
+          const payerInps = Array.from(document.querySelectorAll('#payer-inputs input[data-pid]'));
+          const pUSDs = payerInps.map(i => ({ personId: i.dataset.pid, amount: parseFloat(i.value) || 0 })).filter(p => p.amount > 0);
+          if (!pUSDs.length) { showErr(errEl, '請輸入至少一位付款人金額'); return; }
+          const pSum = pUSDs.reduce((a, p) => a + p.amount, 0);
+          if (Math.abs(pSum - origTotal) > 0.01) { showErr(errEl, `付款合計 ${fmt(pSum)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
+
+          // Convert to TWD and handle remainder
+          let assignedTWD = 0;
+          payers = pUSDs.map((p, i) => {
+            let t;
+            if (i === pUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
+            else { t = toTWD(p.amount); assignedTWD += t; }
+            return { personId: p.personId, amount: t };
+          });
+        } else {
+          payers = [{ personId: $('exp-payer').value, amount }];
+        }
+
+        // Splits
+        let splits = [];
+        if (method === 'equal') {
+          const each = Math.floor((amount / ids.length) * 100) / 100;
+          const last = Math.round((amount - each * (ids.length - 1)) * 100) / 100;
+          splits = ids.map((pid, i) => ({ personId: pid, amount: i === ids.length - 1 ? last : each }));
+        } else if (method === 'custom') {
+          const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
+          let sumUSD = 0;
+          const sUSDs = [];
+          for (const inp of inps) {
+            const v = parseFloat(inp.value) || 0;
+            if (v < 0) { showErr(errEl, '分攤金額不可為負數'); return; }
+            sumUSD += v; sUSDs.push({ personId: inp.dataset.pid, usd: v });
+          }
+          if (Math.abs(sumUSD - origTotal) > 0.01) { showErr(errEl, `自訂金額合計 ${fmt(sumUSD)} 與總額 ${fmt(origTotal)} ${currency} 不符`); return; }
+
+          let assignedTWD = 0;
+          splits = sUSDs.map((s, i) => {
+            let t;
+            if (i === sUSDs.length - 1) { t = Math.round((amount - assignedTWD) * 100) / 100; }
+            else { t = toTWD(s.usd); assignedTWD += t; }
+            return { personId: s.personId, amount: t };
+          });
+        } else {
+          const inps = Array.from(document.querySelectorAll('#custom-inputs input[data-pid]'));
+          let pctSum = 0;
+          const pcts = inps.map(inp => { const v = parseFloat(inp.value) || 0; pctSum += v; return { pid: inp.dataset.pid, pct: v }; });
+          if (Math.abs(pctSum - 100) > 0.1) { showErr(errEl, `比例合計 ${pctSum.toFixed(1)}%，需等於 100%`); return; }
+          let assignedSplitTWD = 0;
+          splits = pcts.map((item, i) => {
+            let amt = i === pcts.length - 1 ? Math.round((amount - assignedSplitTWD) * 100) / 100 : Math.round((amount * item.pct / 100) * 100) / 100;
+            if (i < pcts.length - 1) assignedSplitTWD += amt;
+            return { personId: item.pid, amount: amt };
+          });
+        }
+
+        btn.disabled = true; btn.textContent = '儲存中…'; setSyncStatus('saving');
         const expData = {
           title, total: amount, payers, splits,
-          splitMethod: method,
-          // FX fields
-          currency,
+          splitMethod: method, currency,
           ...(currency !== 'TWD' ? { originalAmount, exchangeRate: rate } : {})
         };
 
@@ -2592,11 +2601,17 @@
           cancelEdit();
         } else {
           await addDoc(collection(db, 'groups', groupId, 'expenses'), { ...expData, createdAt: serverTimestamp(), cleared: false });
-          // 新增成功後清空表單
           cancelEdit();
         }
-      } catch (e) { showErr(errEl, '儲存失敗：' + e.message); setSyncStatus('error'); }
-      finally { btn.disabled = false; btn.textContent = editingExpenseId ? '更新紀錄' : '記錄支出'; }
+      } catch (e) {
+        console.error('儲存時發生錯誤:', e);
+        showErr(errEl, '儲存失敗：' + e.message);
+        setSyncStatus('error');
+        alert('儲存失敗：' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = editingExpenseId ? '更新紀錄' : '記錄支出';
+      }
     }
 
     // ════════════════════════════════════════════════════════
