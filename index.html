@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 
 <head>
@@ -1596,7 +1596,7 @@
         <div class="card" id="card-add">
           <div class="card-header" id="hdr-add">
             <div class="card-header-left">
-              <h3><span class="section-icon">➕</span>新增支出</h3>
+              <h3><span class="section-icon">➕</span><span id="form-title">新增支出</span></h3>
             </div>
             <div class="card-header-right"><span class="card-chevron open" id="chv-add">▼</span></div>
           </div>
@@ -1701,7 +1701,10 @@
             </div>
 
             <div class="error-msg" id="form-error"></div>
-            <button class="btn-submit" id="submit-btn">記錄支出</button>
+            <div style="display:flex;gap:10px;margin-top:4px;">
+              <button class="btn-submit" id="submit-btn">記錄支出</button>
+              <button class="btn-submit" id="cancel-edit-btn" style="display:none;background:var(--bg);color:var(--ink2);border:1.5px solid var(--border);">取消修改</button>
+            </div>
           </div>
         </div>
       </div>
